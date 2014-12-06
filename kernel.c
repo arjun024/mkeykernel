@@ -25,22 +25,22 @@ unsigned int current_loc = 0;
 /* video memory begins at address 0xb8000 */
 char *vidptr = (char*)0xb8000;
 
+struct IDT_entry{
+	unsigned short int offset_lowerbits;
+	unsigned short int selector;
+	unsigned char zero;
+	unsigned char type_attr;
+	unsigned short int offset_higherbits;
+};
+
+struct IDT_entry IDT[IDT_SIZE];
+
 
 void idt_init(void)
 {
 	unsigned long keyboard_address;
 	unsigned long idt_address;
 	unsigned long idt_ptr[2];
-
-	struct IDT_entry{
-	   unsigned short int offset_lowerbits;
-	   unsigned short int selector;
-	   unsigned char zero;
-	   unsigned char type_attr;
-	   unsigned short int offset_higherbits;
-	};
-
-	struct IDT_entry IDT[IDT_SIZE];
 
 	/* populate IDT entry of keyboard's interrupt */
 	keyboard_address = (unsigned long)keyboard_handler; 
