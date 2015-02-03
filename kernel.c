@@ -19,6 +19,9 @@
 
 extern unsigned char keyboard_map[128];
 extern void keyboard_handler(void);
+extern char read_port(unsigned short port);
+extern void write_port(unsigned short port, unsigned char data);
+extern void load_idt(unsigned long *idt_ptr);
 
 /* current cursor location */
 unsigned int current_loc = 0;
@@ -132,14 +135,14 @@ void keyboard_handler_main(void) {
 		keycode = read_port(KEYBOARD_DATA_PORT);
 		if(keycode < 0)
 			return;
-		vidptr[current_loc++] = keyboard_map[keycode];
+		vidptr[current_loc++] = keyboard_map[(unsigned char) keycode];
 		vidptr[current_loc++] = 0x07;
 	}
 }
 
 void kmain(void)
 {
-	char *str = "my first kernel with keyboard support";
+	const char *str = "my first kernel with keyboard support";
 	clear_screen();
 	kprint(str);
 	kprint_newline();
@@ -150,3 +153,4 @@ void kmain(void)
 
 	while(1);
 }
+
