@@ -17,6 +17,8 @@
 #define INTERRUPT_GATE 0x8e
 #define KERNEL_CODE_SEGMENT_OFFSET 0x08
 
+#define ENTER_KEY_CODE 0x1C
+
 extern unsigned char keyboard_map[128];
 extern void keyboard_handler(void);
 extern char read_port(unsigned short port);
@@ -135,6 +137,12 @@ void keyboard_handler_main(void) {
 		keycode = read_port(KEYBOARD_DATA_PORT);
 		if(keycode < 0)
 			return;
+
+		if(keycode == ENTER_KEY_CODE) {
+			kprint_newline();
+			return;
+		}
+
 		vidptr[current_loc++] = keyboard_map[(unsigned char) keycode];
 		vidptr[current_loc++] = 0x07;
 	}
