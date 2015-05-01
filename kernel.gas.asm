@@ -1,14 +1,12 @@
 # Copyright (C) 2015  Xianguang Zhou
 # License: GPL version 2 or higher http://www.gnu.org/licenses/gpl.html
 
-.section .data	
+.section .text
 
 .align 4
 .long 0x1BADB002
 .long 0x00
 .long - (0x1BADB002 + 0x00) 
-
-.section .text
 
 .globl start
 .globl keyboard_handler
