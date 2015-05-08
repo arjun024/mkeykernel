@@ -41,7 +41,6 @@ keyboard_handler:
 	iretd
 
 start:
-	cli 				;block interrupts
 	mov esp, stack_space
 	call kmain
 	hlt 				;halt the CPU
