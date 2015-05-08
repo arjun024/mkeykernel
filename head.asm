@@ -43,7 +43,10 @@ keyboard_handler:
 start:
 	mov esp, stack_space
 	call kmain
+    cli
+.loop:
 	hlt 				;halt the CPU
+    jmp .loop
 
 section .bss
 resb 8192; 8KB for stack
