@@ -14,13 +14,7 @@ Kernel 201 - Let’s write a Kernel with keyboard and screen support
 
 ####Build commands####
 ```
-nasm -f elf32 kernel.asm -o kasm.o
-```
-```
-gcc -m32 -c kernel.c -o kc.o
-```
-```
-ld -m elf_i386 -T link.ld -o kernel kasm.o kc.o
+make
 ```
 
 ####Test on emulator####
