@@ -14,6 +14,7 @@ global keyboard_handler
 global read_port
 global write_port
 global load_idt
+global load_gdt
 
 extern kmain 		;this is defined in the c file
 extern keyboard_handler_main
@@ -34,6 +35,11 @@ load_idt:
 	mov edx, [esp + 4]
 	lidt [edx]
 	sti 				;turn on interrupts
+	ret
+
+load_gdt:
+	mov edx, [esp + 4]
+	lgdt [edx]
 	ret
 
 keyboard_handler:                 
