@@ -43,7 +43,19 @@ load_gdt:
 	ret
 
 keyboard_handler:                 
+	push ds
+	push es
+	push fs
+	push gs
+	pushad
+
 	call    keyboard_handler_main
+
+	popad
+	pop ds
+	pop es
+	pop fs
+	pop gs
 	iretd
 
 start:
