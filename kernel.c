@@ -2,7 +2,6 @@
 * Copyright (C) 2014  Arjun Sreedharan
 * License: GPL version 2 or higher http://www.gnu.org/licenses/gpl.html
 */
-#include <stdio.h>
 #include "keyboard_map.h"
 
 /* there are 25 lines each of 80 columns; each element takes 2 bytes */
