@@ -29,7 +29,7 @@ unsigned int current_loc = 0;
 /* video memory begins at address 0xb8000 */
 char *vidptr = (char*)0xb8000;
 
-struct IDT_entry{
+struct IDT_entry {
 	unsigned short int offset_lowerbits;
 	unsigned short int selector;
 	unsigned char zero;
@@ -123,7 +123,8 @@ void clear_screen(void)
 	}
 }
 
-void keyboard_handler_main(void) {
+void keyboard_handler_main(void)
+{
 	unsigned char status;
 	char keycode;
 
@@ -160,4 +161,3 @@ void kmain(void)
 
 	while(1);
 }
-
