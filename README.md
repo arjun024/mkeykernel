@@ -48,7 +48,7 @@ So, rename the kernel:
 mv kernel kernel-701
 ```
 
-Copy, it to your boot partition (assuming you are superuser):
+Copy it to your boot partition (assuming you are superuser):
 
 ```
 cp kernel-701 /boot/kernel-701
