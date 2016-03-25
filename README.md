@@ -13,12 +13,19 @@ Kernel 201 - Let’s write a Kernel with keyboard and screen support
 (http://arjunsreedharan.org/post/99370248137/kernel-201-lets-write-a-kernel-with-keyboard-and)
 
 ####Build commands####
+1.
 ```
 nasm -f elf32 kernel.asm -o kasm.o
 ```
+or
+```
+as -32 kernel.gas.asm -o kasm.o
+```
+2.
 ```
 gcc -m32 -c kernel.c -o kc.o
 ```
+3.
 ```
 ld -m elf_i386 -T link.ld -o kernel kasm.o kc.o
 ```
