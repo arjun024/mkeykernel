@@ -1,0 +1,9 @@
+    megs:            32
+    display_library: sdl
+    romimage:        file=/usr/share/bochs/BIOS-bochs-latest
+    vgaromimage:     file=/usr/share/bochs/VGABIOS-lgpl-latest
+    ata0-master:     type=cdrom, path=os.iso, status=inserted
+    boot:            cdrom
+    log:             bochslog.txt
+    clock:           sync=realtime, time0=local
+    cpu:             count=1, ips=1000000
