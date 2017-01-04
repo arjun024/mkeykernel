@@ -43,6 +43,7 @@ keyboard_handler:
 start:
 	cli 				;block interrupts
 	mov esp, stack_space
+	push ebx
 	call kmain
 	hlt 				;halt the CPU
 

@@ -2,6 +2,8 @@
 * Copyright (C) 2014  Arjun Sreedharan
 * License: GPL version 2 or higher http://www.gnu.org/licenses/gpl.html
 */
+#include "multiboot.h"
+
 #include "keyboard_map.h"
 
 /* there are 25 lines each of 80 columns; each element takes 2 bytes */
@@ -18,11 +20,18 @@
 
 #define ENTER_KEY_CODE 0x1C
 
+/* kernel debugging mode */
+unsigned char debug_mode = 0;
+unsigned char command[256];
+
 extern unsigned char keyboard_map[128];
+extern unsigned char keyboard_shift_map[128];
 extern void keyboard_handler(void);
 extern char read_port(unsigned short port);
 extern void write_port(unsigned short port, unsigned char data);
 extern void load_idt(unsigned long *idt_ptr);
+
+extern unsigned char keyboard_shift = 0;
 
 /* fb current cursor location */
 unsigned int fb_cursor_x = 0, fb_cursor_y = 0;
@@ -64,6 +73,13 @@ struct IDT_entry {
 };
 
 struct IDT_entry IDT[IDT_SIZE];
+
+typedef struct multiboot_memory_map {
+	unsigned int size;
+    unsigned long long int base_addr;  
+    unsigned long long int length;
+	unsigned int type;
+} multiboot_memory_map_t;
 
 
 void idt_init(void)
@@ -144,7 +160,7 @@ void kprint(const char *str)
                 {
                     /* move cursor to previous line end */
                     fb_cursor_y--;
-                    fb_cursor_x = COLUMNS_IN_LINE - 1;
+                    fb_cursor_x = COLUMNS_IN_LINE;
                 }
             }
             
@@ -157,9 +173,9 @@ void kprint(const char *str)
         
         if (str[i] != '\b')
         {
-            if (fb_cursor_x < COLUMNS_IN_LINE)
+            if (fb_cursor_x < COLUMNS_IN_LINE - 1)
             {
-                fb_cursor_x++;
+                fb_cursor_x = fb_cursor_x + 2;
             }
             else
             {
@@ -185,19 +201,35 @@ void kprint(const char *str)
             fb_current_loc = fb_current_loc + 2;
         }
         i++;
+
         fb_move_cursor (fb_cursor_x + fb_cursor_y * COLUMNS_IN_LINE);
+        
+        /* show cursor line on next position */
+        vidptr[fb_current_loc] = '_';
+        vidptr[fb_current_loc + 1] = fb_color;
 	}
 }
 
 void kprint_newline(void)
 {
 	unsigned int line_size = BYTES_FOR_EACH_ELEMENT * COLUMNS_IN_LINE;
+    
+    /* delete cursor line */
+    vidptr[fb_current_loc] = ' ';
+    vidptr[fb_current_loc + 1] = fb_color;
+    
 	if (fb_cursor_y < LINES - 1)
     {
         fb_current_loc = fb_current_loc + (line_size - fb_current_loc % (line_size));
         fb_cursor_y++;
         fb_cursor_x = 0;
-    }
+        
+        fb_move_cursor (fb_cursor_x + fb_cursor_y * COLUMNS_IN_LINE);
+        
+        /* show cursor line on next position */
+        vidptr[fb_current_loc ] = '_';
+        vidptr[fb_current_loc + 1] = fb_color;
+    }   
     else
     {
         fb_scroll_down ();
@@ -275,8 +307,9 @@ void fb_set_color (unsigned char forecolor, unsigned char backcolor)
 void keyboard_handler_main(void)
 {
 	unsigned char status;
-	char keycode;
+	unsigned char keycode;
     unsigned char ch[2];
+    unsigned char pressed = 0;
 
 	/* write EOI */
 	write_port(0x20, 0x20);
@@ -301,44 +334,103 @@ void keyboard_handler_main(void)
         }    
 		*/
         
-		ch[0] = keyboard_map[(unsigned char) keycode];
-        ch[1] = '\0';
+        if (keycode & 0x80)
+        {
+            pressed = 0;
+        }
+        else
+        {
+            pressed = 1;
+        }
+    
+        if (keycode == KEY_SCAN_ESCAPE)
+        {
+            /* switch debug mode on/off */
+            if (debug_mode == 0)
+            {
+                debug_mode = 1;
+            }
+            else
+            {
+                debug_mode = 0;
+            }
+        }
         
-        kprint (ch);
+        if (debug_mode)
+        {
+            kprint_int (keycode, 16);
+            kprint_newline ();
+        }
+        else
+        {
+            if (keycode == KEY_SCAN_LEFT_SHIFT || keycode == KEY_SCAN_RIGHT_SHIFT)
+            {
+                /* uppercase table */
+                keyboard_shift = 1;
+            }
+        
+            if (keycode == KEY_SCAN_LEFT_SHIFT_RELEASED || keycode == KEY_SCAN_RIGHT_SHIFT_RELEASED)
+            {
+                /* lowercase table */
+                keyboard_shift = 0;
+            }
+          
+            if (pressed == 1)
+            {
+                if (keyboard_shift == 1)
+                {
+                    ch[0] = keyboard_shift_map[(unsigned char) keycode];
+                }
+                else
+                {
+                    ch[0] = keyboard_map[(unsigned char) keycode];
+                }
+		
+                ch[1] = '\0';
+                kprint (ch);
+            }
+        }
 	}
 }
 
-void kmain(void)
+
+void kmain (multiboot_info_t* mbt, unsigned int magic)
 {
-	// const char *str = "red";
+    multiboot_memory_map_t* mmap = mbt->mmap_addr;
+    
+    command[0] = '\0';
+    
 	fb_clear_screen();
 
+    fb_set_color(FB_GREEN, FB_BLACK);
+    kprint ("level 0: RUN"); kprint_newline ();
+    kprint ("level 1: memory"); kprint_newline ();
+   
+	while(mmap < mbt->mmap_addr + mbt->mmap_length) 
+    {
+        kprint ("RAM at "); kprint_int ((unsigned long int) mmap->base_addr, 16); kprint (" size: "); kprint_int ((unsigned long int) mmap->length, 10); kprint (" bytes"); kprint_newline (); 
+        
+		mmap = (multiboot_memory_map_t*) ( (unsigned int)mmap + mmap->size + sizeof(mmap->size) );
+	}
+    
+	idt_init();
+    
+    kprint_newline ();
+    kprint ("level 2: interrupts"); kprint_newline ();
+    
+	kb_init();
+    kprint ("level 3: keyboard"); kprint_newline ();
+    kprint_newline ();
+    
     fb_set_color (FB_RED, FB_BLACK);
     kprint ("red");
     fb_set_color (FB_BLUE, FB_BLACK);
-    kprint (" cube OS");
+    kprint (" cube OS  ");
     fb_set_color(FB_WHITE, FB_BLACK);
+    
+    kprint_int (2017, 10);
     kprint_newline ();
-    
-    kprint_int (2017);
     kprint_newline ();
-    
-    /*
-    unsigned int line = 1;
-    unsigned char ch = 'a';
-    unsigned char str[2];
-    
-    for (line = 1; line < LINES + 1; line++)
-    {
-        str[0] = ch;
-        str[1] = '\0';
-        
-        kprint (str); kprint_newline();
-        ch++;
-    }
-    */
-	idt_init();
-	kb_init();
-
+    kprint ("READY"); kprint_newline ();
 	while(1);
 }

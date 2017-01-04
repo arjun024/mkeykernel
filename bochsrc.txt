@@ -7,3 +7,4 @@
     log:             bochslog.txt
     clock:           sync=realtime, time0=local
     cpu:             count=1, ips=1000000
+    
