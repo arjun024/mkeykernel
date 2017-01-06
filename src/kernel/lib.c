@@ -1,8 +1,10 @@
 /* lib.c - some helper functions */
 
-void strreverse(char* begin, char* end) {
+#include "types.h"
+
+void strreverse(uint8_t* begin, uint8_t* end) {
 	
-	char aux;
+	uint8_t aux;
 	
 	while(end>begin)
 	
@@ -10,13 +12,13 @@ void strreverse(char* begin, char* end) {
 	
 }
 	
-void itoa(unsigned long int value, char* str, int base) {
+void itoa(int32_t value, uint8_t* str, int32_t base) {
 	
-	static char num[] = "0123456789abcdefghijklmnopqrstuvwxyz";
+	static uint8_t num[] = "0123456789abcdefghijklmnopqrstuvwxyz";
 	
-	char* wstr=str;
+	uint8_t* wstr=str;
 	
-	int sign;
+	int32_t sign;
 	
 	// Validate base
 	
@@ -44,7 +46,7 @@ void itoa(unsigned long int value, char* str, int base) {
 }
 	
 
-void kprint_int (long n, int base)
+void kprint_int (int32_t n, int32_t base)
 {
     char str[256];
     
@@ -52,7 +54,7 @@ void kprint_int (long n, int base)
     kprint (str);
 }
 
-int strcmp (const char * str1, const char * str2)
+int16_t strcmp (const uint8_t * str1, const uint8_t * str2)
 {
     while (*str1 == *str2)
     {
@@ -69,5 +71,57 @@ int strcmp (const char * str1, const char * str2)
    else
       return -1;
 }
+
+uint32_t strlen (const uint8_t *str)
+{
+    uint32_t slen = 0;
+    
+    while (*str != '\0')
+    {
+        slen++;
+        str++;
+    }
+    
+    return (slen);
+}
+
+uint8_t *memcpy (uint8_t *dest, const uint8_t *src, uint32_t count)
+{
+    uint32_t i;
+    
+    for (i = 1; i <= count; i++)
+    {
+        dest[i] = src[i];
+    }
+    
+    return (dest);
+}
+
+uint8_t *memset (uint8_t *dest, uint8_t val, uint32_t count)
+{
+    uint32_t i;
+    
+    for (i = 1; i <= count; i++)
+    {
+        dest[i] = val;
+    }
+    
+    return (dest);
+}
+
+uint16_t *memsetw ( uint16_t *dest, uint16_t val, uint32_t count)
+{
+    uint32_t i;
+    
+    for (i = 1; i <= count; i++)
+    {
+        dest[i] = val;
+    }
+    
+    return (dest);
+}
+
+
+
 
     

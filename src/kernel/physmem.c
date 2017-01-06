@@ -116,7 +116,14 @@ int16_t pmem_set_bitmap (uint32_t start, uint32_t end, uint8_t state)
                     }
                     else
                     {
-                        clear_bit (&physmem_pages[p], b);
+                        if (get_bit (physmem_pages[p], b) == FREE)
+                        {
+                            return (MEM_ERR_DOUBLE_FREE);
+                        }
+                        else
+                        {
+                            clear_bit (&physmem_pages[p], b);
+                        }
                     }
                 }
             }
@@ -124,7 +131,7 @@ int16_t pmem_set_bitmap (uint32_t start, uint32_t end, uint8_t state)
             {
                 if (p == start_p)
                 {
-                    for (b = start_b; b <= PAGE_BITS; b++)
+                    for (b = start_b; b < PAGE_BITS; b++)
                     {
                         if (state == ALLOCATE)
                         {
@@ -132,7 +139,14 @@ int16_t pmem_set_bitmap (uint32_t start, uint32_t end, uint8_t state)
                         }
                         else
                         {
-                            clear_bit (&physmem_pages[p], b);
+                            if (get_bit (physmem_pages[p], b) == FREE)
+                            {
+                                return (MEM_ERR_DOUBLE_FREE);
+                            }
+                            else
+                            {
+                                clear_bit (&physmem_pages[p], b);
+                            }
                         }
                     }
                 }
@@ -146,7 +160,14 @@ int16_t pmem_set_bitmap (uint32_t start, uint32_t end, uint8_t state)
                         }
                         else
                         {
-                            clear_bit (&physmem_pages[p], b);
+                            if (get_bit (physmem_pages[p], b) == FREE)
+                            {
+                                return (MEM_ERR_DOUBLE_FREE);
+                            }
+                            else
+                            {
+                                clear_bit (&physmem_pages[p], b);
+                            }
                         }
                     }
                 }
@@ -163,7 +184,14 @@ int16_t pmem_set_bitmap (uint32_t start, uint32_t end, uint8_t state)
             }
             else
             {
-                clear_bit (&physmem_pages[p], b);
+                if (get_bit (physmem_pages[p], b) == FREE)
+                {
+                    return (MEM_ERR_DOUBLE_FREE);
+                }
+                else
+                {
+                    clear_bit (&physmem_pages[p], b);
+                }
             }
             
         }
@@ -269,7 +297,7 @@ uint32_t pmem_count_free_pages (void)
 }
     
     
-uint32_t kmalloc (size_t size)
+void *kmalloc (size_t size)
 {
     uint32_t start_free, end_free;
     uint32_t *ptr;

@@ -12,9 +12,9 @@
 #define KEY_SCAN_ESCAPE                     0x01
 
 
-unsigned char keyboard_shift;
+uint8_t keyboard_shift;
 
-unsigned char keyboard_map[128] =
+uint8_t keyboard_map[128] =
 {
     0,  27, '1', '2', '3', '4', '5', '6', '7', '8',	/* 9 */
   '9', '0', '-', '=', '\b',	/* Backspace */
@@ -54,7 +54,7 @@ unsigned char keyboard_map[128] =
     0,	/* All other keys are undefined */
 };
 
-unsigned char keyboard_shift_map[128] =
+uint8_t keyboard_shift_map[128] =
 {
     0,  27, '1', '2', '3', '4', '5', '6', '7', '8',	/* 9 */
   '9', '0', '-', '=', '\b',	/* Backspace */

@@ -2,6 +2,7 @@
 * Copyright (C) 2014  Arjun Sreedharan
 * License: GPL version 2 or higher http://www.gnu.org/licenses/gpl.html
 */
+#include "types.h"
 #include "multiboot.h"
 
 #include "keyboard_map.h"
@@ -21,21 +22,27 @@
 #define ENTER_KEY_CODE 0x1C
 
 /* kernel debugging mode */
-unsigned char debug_mode = 0;
-unsigned char command[256];
+uint8_t debug_mode = 0;
+uint8_t command[256];
 
-extern unsigned char keyboard_map[128];
-extern unsigned char keyboard_shift_map[128];
+
+/* memory */
+uint32_t mem_start_address = 0x100000;
+uint32_t mem_end_address;
+uint32_t mem_use_address = 0x400000;
+
+extern uint8_t keyboard_map[128];
+extern uint8_t keyboard_shift_map[128];
 extern void keyboard_handler(void);
-extern char read_port(unsigned short port);
+extern int8_t read_port(unsigned short port);
 extern void write_port(unsigned short port, unsigned char data);
 extern void load_idt(unsigned long *idt_ptr);
 
-extern unsigned char keyboard_shift = 0;
+extern uint8_t keyboard_shift;
 
 /* fb current cursor location */
-unsigned int fb_cursor_x = 0, fb_cursor_y = 0;
-unsigned int fb_current_loc = 0;
+uint16_t fb_cursor_x = 0, fb_cursor_y = 0;
+uint32_t fb_current_loc = 0;
 
 
 /* fb text color */
@@ -56,40 +63,40 @@ unsigned int fb_current_loc = 0;
 #define FB_LIGHT_BROWN      0x14
 #define FB_WHITE            0x0f
 
-unsigned char fb_color = FB_LIGHT_GREY;      /* light grey */
+uint8_t fb_color = FB_LIGHT_GREY;      /* light grey */
 
 /* video memory begins at address 0xb8000 */
-char *vidptr = (char*)0xb8000;
+static int8_t *vidptr = (int8_t*)0xb8000;
 
 /* frame buffer console */
-static unsigned char fb_con[SCREENSIZE];
+uint8_t fb_con[SCREENSIZE];
 
 struct IDT_entry {
-	unsigned short int offset_lowerbits;
-	unsigned short int selector;
-	unsigned char zero;
-	unsigned char type_attr;
-	unsigned short int offset_higherbits;
+	uint16_t offset_lowerbits;
+	uint16_t selector;
+	uint8_t zero;
+	uint8_t type_attr;
+	uint16_t offset_higherbits;
 };
 
 struct IDT_entry IDT[IDT_SIZE];
 
 typedef struct multiboot_memory_map {
-	unsigned int size;
-    unsigned long long int base_addr;  
-    unsigned long long int length;
-	unsigned int type;
+	uint32_t size;
+    uint64_t base_addr;  
+    uint64_t length;
+	uint32_t type;
 } multiboot_memory_map_t;
 
 
 void idt_init(void)
 {
-	unsigned long keyboard_address;
-	unsigned long idt_address;
-	unsigned long idt_ptr[2];
+	uint32_t keyboard_address;
+	uint32_t idt_address;
+	uint32_t idt_ptr[2];
 
 	/* populate IDT entry of keyboard's interrupt */
-	keyboard_address = (unsigned long)keyboard_handler;
+	keyboard_address = (uint32_t)keyboard_handler;
 	IDT[0x21].offset_lowerbits = keyboard_address & 0xffff;
 	IDT[0x21].selector = KERNEL_CODE_SEGMENT_OFFSET;
 	IDT[0x21].zero = 0;
@@ -128,7 +135,7 @@ void idt_init(void)
 	write_port(0xA1 , 0xff);
 
 	/* fill the IDT descriptor */
-	idt_address = (unsigned long)IDT ;
+	idt_address = (uint32_t)IDT ;
 	idt_ptr[0] = (sizeof (struct IDT_entry) * IDT_SIZE) + ((idt_address & 0xffff) << 16);
 	idt_ptr[1] = idt_address >> 16 ;
 
@@ -143,7 +150,7 @@ void kb_init(void)
 
 void kprint(const char *str)
 {
-	unsigned int i = 0;
+	uint32_t i = 0;
     
 	while (str[i] != '\0') {
         if (str[i] == '\b')
@@ -170,12 +177,11 @@ void kprint(const char *str)
             
             fb_blit ();
         }
-        
-        if (str[i] != '\b')
+        else
         {
             if (fb_cursor_x < COLUMNS_IN_LINE - 1)
             {
-                fb_cursor_x = fb_cursor_x + 2;
+                fb_cursor_x = fb_cursor_x + 1;
             }
             else
             {
@@ -202,7 +208,7 @@ void kprint(const char *str)
         }
         i++;
 
-        fb_move_cursor (fb_cursor_x + fb_cursor_y * COLUMNS_IN_LINE);
+        fb_move_cursor ((fb_cursor_x + 1) + fb_cursor_y * COLUMNS_IN_LINE);
         
         /* show cursor line on next position */
         vidptr[fb_current_loc] = '_';
@@ -212,7 +218,7 @@ void kprint(const char *str)
 
 void kprint_newline(void)
 {
-	unsigned int line_size = BYTES_FOR_EACH_ELEMENT * COLUMNS_IN_LINE;
+	uint16_t line_size = BYTES_FOR_EACH_ELEMENT * COLUMNS_IN_LINE;
     
     /* delete cursor line */
     vidptr[fb_current_loc] = ' ';
@@ -220,7 +226,9 @@ void kprint_newline(void)
     
 	if (fb_cursor_y < LINES - 1)
     {
-        fb_current_loc = fb_current_loc + (line_size - fb_current_loc % (line_size));
+        // fb_current_loc = fb_current_loc + (line_size - (fb_current_loc % line_size));
+        
+        fb_current_loc = fb_current_loc + (COLUMNS_IN_LINE - fb_cursor_x) * BYTES_FOR_EACH_ELEMENT;
         fb_cursor_y++;
         fb_cursor_x = 0;
         
@@ -233,15 +241,16 @@ void kprint_newline(void)
     else
     {
         fb_scroll_down ();
-        fb_current_loc = SCREENSIZE - (BYTES_FOR_EACH_ELEMENT * COLUMNS_IN_LINE);
+        fb_current_loc = SCREENSIZE - line_size;
+        fb_cursor_x = 0;
     }
 }
 
 void fb_scroll_down (void)
 {
-    unsigned int old_pos = BYTES_FOR_EACH_ELEMENT * COLUMNS_IN_LINE, new_pos = 0;
-    unsigned int x_pos;
-    unsigned int y_pos;
+    uint16_t old_pos = BYTES_FOR_EACH_ELEMENT * COLUMNS_IN_LINE, new_pos = 0;
+    uint16_t x_pos;
+    uint16_t y_pos;
     
     for (y_pos = 1; y_pos < LINES; y_pos++)
     {
@@ -265,7 +274,7 @@ void fb_scroll_down (void)
             
 void fb_blit (void)
 {
-    unsigned int i = 0, j = 0;
+    uint16_t i = 0, j = 0;
 	
     while (i < SCREENSIZE)
     {
@@ -276,7 +285,7 @@ void fb_blit (void)
 
 void fb_clear_screen(void)
 {
-	unsigned int i = 0;
+	uint16_t i = 0;
 	while (i < SCREENSIZE) {
 		vidptr[i++] = ' ';
 		vidptr[i++] = 0x00;
@@ -292,7 +301,7 @@ void fb_clear_screen(void)
 
 void fb_clear_con (void)
 {
-    unsigned int i = 0;
+    uint16_t i = 0;
     while (i < SCREENSIZE) {
 		fb_con[i++] = ' ';
 		fb_con[i++] = 0x00;
@@ -306,10 +315,10 @@ void fb_set_color (unsigned char forecolor, unsigned char backcolor)
 
 void keyboard_handler_main(void)
 {
-	unsigned char status;
-	unsigned char keycode;
-    unsigned char ch[2];
-    unsigned char pressed = 0;
+	uint8_t status;
+	uint8_t keycode;
+    uint8_t ch[2];
+    uint8_t pressed = 0;
 
 	/* write EOI */
 	write_port(0x20, 0x20);
@@ -396,22 +405,118 @@ void keyboard_handler_main(void)
 
 void kmain (multiboot_info_t* mbt, unsigned int magic)
 {
-    multiboot_memory_map_t* mmap = mbt->mmap_addr;
+    gdt_install ();         /* init memory GDT */
+    // vmem_paging ();      /* switch paging on */
     
+    multiboot_memory_map_t* mmap = mbt->mmap_addr;
+    uint32_t mem_start,  mem_end;
+    uint32_t mem_type;
+    uint8_t mem_found = 0;
+    int16_t mem;
+    
+    uint32_t pages_free;
+    uint64_t ram_free;
     command[0] = '\0';
     
 	fb_clear_screen();
-
+    
     fb_set_color(FB_GREEN, FB_BLACK);
     kprint ("level 0: RUN"); kprint_newline ();
     kprint ("level 1: memory"); kprint_newline ();
-   
+
+    pmem_init_bitmap ();
+    
 	while(mmap < mbt->mmap_addr + mbt->mmap_length) 
     {
-        kprint ("RAM at "); kprint_int ((unsigned long int) mmap->base_addr, 16); kprint (" size: "); kprint_int ((unsigned long int) mmap->length, 10); kprint (" bytes"); kprint_newline (); 
+        mem_start = mmap->base_addr;
+        mem_end = mem_start + mmap->length;
+        mem_type = mmap->type;
         
-		mmap = (multiboot_memory_map_t*) ( (unsigned int)mmap + mmap->size + sizeof(mmap->size) );
+        if (mem_type == 1)
+        {
+            kprint ("RAM at "); kprint_int ((uint32_t) mmap->base_addr, 16); 
+        
+            if (mmap->length < 1024 * 1024)
+            {
+                kprint (" size: "); kprint_int ((uint32_t) mmap->length, 10); kprint (" bytes ");
+            }
+            else
+            {
+                kprint (" size: "); kprint_int ((uint32_t) mmap->length / (1024 * 1024), 10); kprint (" MB ");
+            }
+            kprint ("type: "); kprint_int ((uint32_t) mmap->type, 16);
+       
+            if (mem_start >= mem_start_address)
+            {
+                mem_end_address = mem_end;
+                mem_found = 1;
+                
+                mem = pmem_set_bitmap (mem_use_address, mem_end, FREE);
+                if (mem == MEM_ERR_OK)
+                {
+                    kprint (" found base");
+                }
+                else
+                {
+                    kprint (" MEMORY ERROR: ");
+                    
+                    if (mem == MEM_ERR_RANGE)
+                    {
+                        kprint ("range");
+                    }
+                    
+                    if (mem == MEM_ERR_BAD_MEM || mem == MEM_ERR_DOUBLE_FREE)
+                    {
+                        kprint ("alloc error");
+                    }
+                }
+                kprint_newline (); 
+            }
+            else
+            {    
+                if (mem_start == 0)
+                {
+                    mem_start = (uint32_t) 0x1000;       /* skip first page */
+                }
+                        
+                mem = pmem_set_bitmap (mem_start, mem_end, FREE);
+                if (mem == MEM_ERR_OK)
+                {
+                    kprint (" free");
+                }
+                else
+                {
+                    kprint (" MEMORY ERROR: ");
+                    
+                    if (mem == MEM_ERR_RANGE)
+                    {
+                        kprint ("range");
+                    }
+                        
+                    if (mem == MEM_ERR_BAD_MEM || mem == MEM_ERR_DOUBLE_FREE)
+                    {
+                        kprint ("alloc error");
+                    } 
+                }
+                kprint_newline ();
+            }
+        }
+    
+		mmap = (multiboot_memory_map_t*) ( (uint32_t)mmap + mmap->size + sizeof(mmap->size) );
 	}
+	
+	pmem_set_first_page ();    /* so no null pointer for free mem block can exist */
+	
+	mem = pmem_set_bitmap ((uint32_t) 0xF00000, (uint32_t) 0xFFFFFF, ALLOCATE);
+    if (mem != MEM_ERR_OK)
+    {
+        kprint ("MEMORY ERROR: mark reserved");
+        kprint_newline ();
+    }
+    
+    pages_free = pmem_count_free_pages ();
+    ram_free = (pages_free * 4096) / 1024 /1024;
+    kprint ("free pages: "); kprint_int (pages_free, 10); kprint (" = " ); kprint_int ((uint32_t) ram_free, 10); kprint (" MB"); kprint_newline ();
     
 	idt_init();
     
@@ -431,6 +536,40 @@ void kmain (multiboot_info_t* mbt, unsigned int magic)
     kprint_int (2017, 10);
     kprint_newline ();
     kprint_newline ();
+    
+    uint32_t i;
+    
+    /*
+    for (i = 0; i < 10; i++)
+    {
+        pmem_show_page (i);
+    }
+    */
+    
+    
+    /*
+    uint8_t *buf;
+    buf = (uint8_t *) kmalloc (100000);
+    if (buf != NULL)
+    {
+        kprint ("mem allocated at "); kprint_int (buf, 16); kprint_newline ();
+    }
+    else
+    {
+        kprint ("mem allocate failed");
+    }
+    kprint_newline ();
+    
+    
+    if (kfree (buf) != NULL)
+    {
+        kprint ("free ERROR!"); kprint_newline ();
+    }
+    */
+    
+    kprint_newline ();
+    
     kprint ("READY"); kprint_newline ();
+    
 	while(1);
 }
