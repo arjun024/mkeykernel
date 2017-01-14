@@ -10,6 +10,7 @@
 #define KEY_SCAN_RIGHT_SHIFT_RELEASED       0xB6
 
 #define KEY_SCAN_ESCAPE                     0x01
+#define KEY_SCAN_F1                         0x3B
 
 
 uint8_t keyboard_shift;

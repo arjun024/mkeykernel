@@ -3,9 +3,14 @@
 * License: GPL version 2 or higher http://www.gnu.org/licenses/gpl.html
 */
 #include "types.h"
+#include "registers.h"
 #include "multiboot.h"
-
+#include "idt.h"
+#include "ports.h"
+#include "interrupts.h"
 #include "keyboard_map.h"
+
+void jump_usermode (void);
 
 /* there are 25 lines each of 80 columns; each element takes 2 bytes */
 #define LINES 25
@@ -23,7 +28,9 @@
 
 /* kernel debugging mode */
 uint8_t debug_mode = 0;
+uint8_t command_mode = 0;
 uint8_t command[256];
+int16_t com_ind = 0;
 
 
 /* memory */
@@ -31,18 +38,23 @@ uint32_t mem_start_address = 0x100000;
 uint32_t mem_end_address;
 uint32_t mem_use_address = 0x400000;
 
+
 extern uint8_t keyboard_map[128];
 extern uint8_t keyboard_shift_map[128];
-extern void keyboard_handler(void);
-extern int8_t read_port(unsigned short port);
-extern void write_port(unsigned short port, unsigned char data);
+
 extern void load_idt(unsigned long *idt_ptr);
+
+void timerHandler(registers_t* regs);
+void thread(uint32_t argument);
 
 extern uint8_t keyboard_shift;
 
 /* fb current cursor location */
 uint16_t fb_cursor_x = 0, fb_cursor_y = 0;
 uint32_t fb_current_loc = 0;
+
+/* timer */
+static uint32_t clock_ticks = 0;
 
 
 /* fb text color */
@@ -71,15 +83,6 @@ static int8_t *vidptr = (int8_t*)0xb8000;
 /* frame buffer console */
 uint8_t fb_con[SCREENSIZE];
 
-struct IDT_entry {
-	uint16_t offset_lowerbits;
-	uint16_t selector;
-	uint8_t zero;
-	uint8_t type_attr;
-	uint16_t offset_higherbits;
-};
-
-struct IDT_entry IDT[IDT_SIZE];
 
 typedef struct multiboot_memory_map {
 	uint32_t size;
@@ -89,64 +92,17 @@ typedef struct multiboot_memory_map {
 } multiboot_memory_map_t;
 
 
-void idt_init(void)
-{
-	uint32_t keyboard_address;
-	uint32_t idt_address;
-	uint32_t idt_ptr[2];
-
-	/* populate IDT entry of keyboard's interrupt */
-	keyboard_address = (uint32_t)keyboard_handler;
-	IDT[0x21].offset_lowerbits = keyboard_address & 0xffff;
-	IDT[0x21].selector = KERNEL_CODE_SEGMENT_OFFSET;
-	IDT[0x21].zero = 0;
-	IDT[0x21].type_attr = INTERRUPT_GATE;
-	IDT[0x21].offset_higherbits = (keyboard_address & 0xffff0000) >> 16;
-
-	/*     Ports
-	*	 PIC1	PIC2
-	*Command 0x20	0xA0
-	*Data	 0x21	0xA1
-	*/
-
-	/* ICW1 - begin initialization */
-	write_port(0x20 , 0x11);
-	write_port(0xA0 , 0x11);
-
-	/* ICW2 - remap offset address of IDT */
-	/*
-	* In x86 protected mode, we have to remap the PICs beyond 0x20 because
-	* Intel have designated the first 32 interrupts as "reserved" for cpu exceptions
-	*/
-	write_port(0x21 , 0x20);
-	write_port(0xA1 , 0x28);
-
-	/* ICW3 - setup cascading */
-	write_port(0x21 , 0x00);
-	write_port(0xA1 , 0x00);
-
-	/* ICW4 - environment info */
-	write_port(0x21 , 0x01);
-	write_port(0xA1 , 0x01);
-	/* Initialization finished */
-
-	/* mask interrupts */
-	write_port(0x21 , 0xff);
-	write_port(0xA1 , 0xff);
-
-	/* fill the IDT descriptor */
-	idt_address = (uint32_t)IDT ;
-	idt_ptr[0] = (sizeof (struct IDT_entry) * IDT_SIZE) + ((idt_address & 0xffff) << 16);
-	idt_ptr[1] = idt_address >> 16 ;
-
-	load_idt(idt_ptr);
-}
+// threading 
+uint8_t threading = 0;
+uint8_t threads_request = 0;
 
 void kb_init(void)
 {
 	/* 0xFD is 11111101 - enables only IRQ1 (keyboard)*/
-	write_port(0x21 , 0xFD);
+	outb(0x21 , 0xFC);
 }
+
+
 
 void kprint(const char *str)
 {
@@ -234,6 +190,8 @@ void kprint_newline(void)
         
         fb_move_cursor (fb_cursor_x + fb_cursor_y * COLUMNS_IN_LINE);
         
+        fb_blit ();
+        
         /* show cursor line on next position */
         vidptr[fb_current_loc ] = '_';
         vidptr[fb_current_loc + 1] = fb_color;
@@ -313,35 +271,90 @@ void fb_set_color (unsigned char forecolor, unsigned char backcolor)
     fb_color = (backcolor << 4) | (forecolor & 0x0F);
 }
 
-void keyboard_handler_main(void)
+void div_by_zero_handler_main (void)
+{
+    fb_set_color (FB_RED, FB_BLACK);
+    kprint ("KERNEL PANIC! division by ZERO"); kprint_newline ();
+    fb_set_color (FB_WHITE, FB_BLACK);
+    
+    outb (0x20, 0x20);
+}
+
+void div_by_zero ()
+{
+    uint8_t i;
+    
+    i = 23 / 0;
+}
+
+void keyboard_handler(registers_t* regs)
 {
 	uint8_t status;
 	uint8_t keycode;
     uint8_t ch[2];
     uint8_t pressed = 0;
 
-	/* write EOI */
-	write_port(0x20, 0x20);
-
-	status = read_port(KEYBOARD_STATUS_PORT);
+    /* debug */
+    uint32_t i;
+    
+    
+	status = inb(KEYBOARD_STATUS_PORT);
 	/* Lowest bit of status will be set if buffer is not empty */
 	if (status & 0x01) {
-		keycode = read_port(KEYBOARD_DATA_PORT);
+		keycode = inb(KEYBOARD_DATA_PORT);
 		if(keycode < 0)
 			return;
 
 		if(keycode == ENTER_KEY_CODE) {
 			kprint_newline();
+            
+            if (command_mode)
+            {
+                command[com_ind] = '\0';
+                
+                kprint (command); kprint ("> ");
+                if (strcmp (command, "div") == 0)
+                {
+                    div_by_zero ();
+                }
+                
+                if (strcmp (command, "page") == 0)
+                {
+                    command[0] = '\0'; com_ind = 0;
+                
+                    for (i = 0; i < LINES -1; i++)
+                    {
+                        pmem_show_page (i);
+                    }    
+                }
+                
+                if (strcmp (command, "tasks") == 0)
+                {
+                    command[0] = '\0'; com_ind = 0;
+                
+                    threads_request = 1;
+                }
+                
+                command[0] = '\0';
+                com_ind = 0;
+            }
+            
 			return;
 		}
 
-		/*
 		if (keycode == '\b')
         {
-        
+            // backspace
             
+            if (command_mode == 1)
+            {
+                if (com_ind >= 2)
+                {
+                    com_ind = com_ind - 2;
+                    command[com_ind] = '\0';
+                }
+            }
         }    
-		*/
         
         if (keycode & 0x80)
         {
@@ -364,6 +377,32 @@ void keyboard_handler_main(void)
                 debug_mode = 0;
             }
         }
+        
+        if (keycode == KEY_SCAN_F1)
+        {
+            /* switch command console on */
+            
+            if (command_mode == 0)
+            {
+                command_mode = 1;
+                
+                fb_set_color (FB_RED, FB_BLACK);
+                kprint ("COMMAND MODE"); kprint_newline ();
+                kprint ("press F1 to EXIT"); kprint_newline ();
+                kprint ("commands:"); kprint_newline();
+                kprint ("div [division by zero interrupt check]"); kprint_newline ();
+                kprint ("page [show usage of pages]"); kprint_newline ();
+                kprint ("tasks [multitasking demo]"); kprint_newline ();
+                kprint ("press ENTER for prompt!"); kprint_newline ();
+            }
+            else
+            {
+                command_mode = 0;
+                command[0] = '\0'; com_ind = 0;
+                fb_set_color (FB_WHITE, FB_BLACK);
+            }
+        }
+            
         
         if (debug_mode)
         {
@@ -389,10 +428,22 @@ void keyboard_handler_main(void)
                 if (keyboard_shift == 1)
                 {
                     ch[0] = keyboard_shift_map[(unsigned char) keycode];
+                    
+                    if (command_mode)
+                    {
+                        command[com_ind] = ch[0];
+                        com_ind++;
+                    }
                 }
                 else
                 {
                     ch[0] = keyboard_map[(unsigned char) keycode];
+                    
+                    if (command_mode)
+                    {
+                        command[com_ind] = ch[0];
+                        com_ind++;
+                    }
                 }
 		
                 ch[1] = '\0';
@@ -402,10 +453,116 @@ void keyboard_handler_main(void)
 	}
 }
 
+uint32_t clock (void)
+{
+    return (clock_ticks);
+}
 
+void kdelay (uint32_t ticks)
+{
+    uint32_t end_ticks = clock () + ticks;
+    
+    while (clock () < end_ticks)
+    {
+    }
+}
+
+
+loop_mark ()
+{
+    /* simple loop "benchmark" */
+    
+    uint32_t start_time, end_time, loop_time, i, j, k;
+    uint32_t loop_max = 20000;
+    uint32_t loops_per_sec;
+    
+     kprint ("loop mark: ");
+    
+    start_time = clock ();
+    
+    for (i = 1; i <= loop_max; i++)
+    {
+        for (j = 1; j <= loop_max; j++)
+        {
+            
+        }
+    }
+    
+    end_time = clock ();
+    loop_time = end_time - start_time;
+    
+    loops_per_sec = (loop_max * loop_max) / (loop_time / TIMER_FREQ); 
+    
+    kprint_int (loop_time, 10); kprint_newline ();
+    kprint ("loops per sec: "); kprint_int (loops_per_sec, 10); kprint_newline (); kprint_newline ();
+}
+    
+ 
+void timerHandler(registers_t* regs)
+{
+    clock_ticks++;
+	
+    if (threading)
+    {
+        thread_schedule(regs);
+    }
+    // kprint ("clock: "); kprint_int (clock_ticks, 10); kprint_newline ();
+}
+ 
+void thread_a(uint32_t argument)
+{
+    uint32_t ticks;
+	for(;;)
+	{
+        ticks = clock ();
+		kprint ("thread A: "); kprint_int (ticks, 10); kprint_newline ();
+		for(uint32_t i = 0; i < 200000; i++);
+	}
+}
+  
+void thread_b(uint32_t argument)
+{
+    uint32_t ticks;
+	for(;;)
+	{
+        ticks = clock ();
+		kprint ("thread B: "); kprint_int (ticks, 10); kprint_newline ();
+		for(uint32_t i = 0; i < 200000; i++);
+	}
+}
+  
+void run_threads (void)
+{
+    uint8_t *thread_base = (uint8_t *) kmalloc (20000);
+    uint8_t *thread_a_context = (uint8_t *) kmalloc (4096);
+    uint8_t *thread_a_stack = (uint8_t *) kmalloc (4096);
+
+    uint8_t *thread_b_context = (uint8_t *) kmalloc (4096);
+    uint8_t *thread_b_stack = (uint8_t *) kmalloc (4096);
+    
+    thread_init(thread_base);
+	thread_create(thread_a_context, thread_a_stack, 4096, (uint32_t)thread_a, 0x61);
+    thread_create(thread_b_context, thread_b_stack, 4096, (uint32_t)thread_b, 0x61);
+    
+    threading = 1;
+}
+    
+  
 void kmain (multiboot_info_t* mbt, unsigned int magic)
 {
-    gdt_install ();         /* init memory GDT */
+    set_gdt ();         /* init memory GDT */
+    
+    idt_install();				//set up IDT
+	interrupts_init();			//set up callback table
+	pic_init();					//set up PIC
+    interrupts_enable();
+    interrupts_registerHandler(IRQ_TIMER, timerHandler);
+    interrupts_registerHandler(IRQ_KEYBOARD, keyboard_handler);
+	pit_init(100);
+    
+    
+    
+    
     // vmem_paging ();      /* switch paging on */
     
     multiboot_memory_map_t* mmap = mbt->mmap_addr;
@@ -518,14 +675,18 @@ void kmain (multiboot_info_t* mbt, unsigned int magic)
     ram_free = (pages_free * 4096) / 1024 /1024;
     kprint ("free pages: "); kprint_int (pages_free, 10); kprint (" = " ); kprint_int ((uint32_t) ram_free, 10); kprint (" MB"); kprint_newline ();
     
-	idt_init();
-    
     kprint_newline ();
     kprint ("level 2: interrupts"); kprint_newline ();
     
-	kb_init();
+    // kb_init();
+    pic_unmask_irq(IRQ_KEYBOARD);
+	
+    
+    
     kprint ("level 3: keyboard"); kprint_newline ();
     kprint_newline ();
+    
+    // loop_mark ();
     
     fb_set_color (FB_RED, FB_BLACK);
     kprint ("red");
@@ -567,9 +728,24 @@ void kmain (multiboot_info_t* mbt, unsigned int magic)
     }
     */
     
+    kprint ("F1 = command console"); kprint_newline();
     kprint_newline ();
     
     kprint ("READY"); kprint_newline ();
     
-	while(1);
+    pic_unmask_irq(IRQ_TIMER);
+    
+    
+    // jump_usermode ();
+    
+	while(1)
+    {
+        kdelay (200);
+        
+        if (threads_request == 1)
+        {
+            run_threads();
+            threads_request = 0;
+        }
+    }
 }

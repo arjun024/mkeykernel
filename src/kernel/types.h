@@ -33,3 +33,11 @@ typedef uint32_t size_t;
 #define MEM_ERR_BAD_MEM         1
 #define MEM_ERR_RANGE           2
 #define MEM_ERR_NOMEM           3
+#define MEM_ERR_DOUBLE_FREE     4
+
+/* PIT timer Hz */
+#define TIMER_FREQ              100
+
+//gdt descriptor offsets
+#define GDT_KERNEL_CODE             0x08
+#define GDT_KERNEL_DATA             0x10
