@@ -11,6 +11,7 @@
 
 #define KEY_SCAN_ESCAPE                     0x01
 #define KEY_SCAN_F1                         0x3B
+#define KEY_SCAN_CTRL_LEFT                  0x1D
 
 
 uint8_t keyboard_shift;

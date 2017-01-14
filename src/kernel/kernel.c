@@ -378,7 +378,7 @@ void keyboard_handler(registers_t* regs)
             }
         }
         
-        if (keycode == KEY_SCAN_F1)
+        if (keycode == KEY_SCAN_F1 || keycode == KEY_SCAN_CTRL_LEFT)
         {
             /* switch command console on */
             
@@ -516,7 +516,7 @@ void thread_a(uint32_t argument)
 	{
         ticks = clock ();
 		kprint ("thread A: "); kprint_int (ticks, 10); kprint_newline ();
-		for(uint32_t i = 0; i < 200000; i++);
+		kdelay (50);
 	}
 }
   
@@ -527,7 +527,7 @@ void thread_b(uint32_t argument)
 	{
         ticks = clock ();
 		kprint ("thread B: "); kprint_int (ticks, 10); kprint_newline ();
-		for(uint32_t i = 0; i < 200000; i++);
+		kdelay (50);
 	}
 }
   
@@ -728,7 +728,7 @@ void kmain (multiboot_info_t* mbt, unsigned int magic)
     }
     */
     
-    kprint ("F1 = command console"); kprint_newline();
+    kprint ("F1 or CTRL-LEFT = command console"); kprint_newline();
     kprint_newline ();
     
     kprint ("READY"); kprint_newline ();
