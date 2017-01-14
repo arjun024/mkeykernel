@@ -1,4 +1,5 @@
 #include "io.h"
+#include "ports.h"
 
     /* The I/O ports */
     #define FB_COMMAND_PORT         0x3D4
@@ -15,8 +16,8 @@
      */
     void fb_move_cursor(unsigned short pos)
     {
-        write_port(FB_COMMAND_PORT, FB_HIGH_BYTE_COMMAND);
-        write_port(FB_DATA_PORT,    ((pos >> 8) & 0x00FF));
-        write_port(FB_COMMAND_PORT, FB_LOW_BYTE_COMMAND);
-        write_port(FB_DATA_PORT,    pos & 0x00FF);
+        outb (FB_COMMAND_PORT, FB_HIGH_BYTE_COMMAND);
+        outb (FB_DATA_PORT,    ((pos >> 8) & 0x00FF));
+        outb (FB_COMMAND_PORT, FB_LOW_BYTE_COMMAND);
+        outb (FB_DATA_PORT,    pos & 0x00FF);
     }
