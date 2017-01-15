@@ -41,3 +41,9 @@ typedef uint32_t size_t;
 //gdt descriptor offsets
 #define GDT_KERNEL_CODE             0x08
 #define GDT_KERNEL_DATA             0x10
+
+/* there are 25 lines each of 80 columns; each element takes 2 bytes */
+#define LINES 25
+#define COLUMNS_IN_LINE 80
+#define BYTES_FOR_EACH_ELEMENT 2
+#define SCREENSIZE BYTES_FOR_EACH_ELEMENT * COLUMNS_IN_LINE * LINES

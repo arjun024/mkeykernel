@@ -109,7 +109,7 @@ void set_gdt (void)
     null_code->always_1 = 1;
     null_code->DPL = 0;
     null_code->present = 1;
-    null_code->limit_high = 0xF;
+    null_code->limit_high = 0xFFFF;
     null_code->available = 1;
     null_code->big = 1;
     null_code->gran = 1;
@@ -132,7 +132,7 @@ void set_gdt (void)
     code->always_1=1;
     code->DPL=3; //set it to ring 3
     code->present=1;
-    code->limit_high=0xF;
+    code->limit_high=0xFFFF;
     code->available=1;
     code->always_0=0;
     code->big=1; //signal it's 32 bits

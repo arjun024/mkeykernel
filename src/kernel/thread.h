@@ -27,6 +27,8 @@ typedef struct ThreadContext_
     uint32_t  gs;        // 56
     uint32_t  ss;        // 60
     uint32_t  cr3;       // 64	- unused for now...
+    int32_t  priority;   // task priority
+    uint32_t  next_switch; // next thread switch at this clock
 	struct ThreadContext_* next;
 } ThreadContext;
 

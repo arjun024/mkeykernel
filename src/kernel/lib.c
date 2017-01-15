@@ -2,6 +2,8 @@
 
 #include "types.h"
 
+extern uint8_t keyboard_ch;
+
 void strreverse(uint8_t* begin, uint8_t* end) {
 	
 	uint8_t aux;
@@ -45,7 +47,44 @@ void itoa(int32_t value, uint8_t* str, int32_t base) {
 	strreverse(str,wstr-1);
 }
 	
-
+// A utility function to check whether x is numeric
+uint8_t isNumericChar(uint8_t x)
+{
+    return (x >= '0' && x <= '9')? TRUE: FALSE;
+}
+  
+// A simple atoi() function. If the given string contains
+// any invalid character, then this function returns 0
+int32_t atoi(uint8_t *str)
+{
+    if (*str == NULL)
+       return 0;
+  
+    int32_t res = 0;  // Initialize result
+    int32_t sign = 1;  // Initialize sign as positive
+    int32_t i = 0;  // Initialize index of first digit
+  
+    // If number is negative, then update sign
+    if (str[0] == '-')
+    {
+        sign = -1;
+        i++;  // Also update index of first digit
+    }
+  
+    // Iterate through all digits of input string and update result
+    for (; str[i] != '\0'; ++i)
+    {
+        if (isNumericChar(str[i]) == FALSE)
+            return 0; // You may add some lines to write error message
+                      // to error stream
+        res = res*10 + str[i] - '0';
+    }
+  
+    // Return result with sign
+    return sign*res;
+}
+	
+	
 void kprint_int (int32_t n, int32_t base)
 {
     char str[256];
@@ -121,7 +160,19 @@ uint16_t *memsetw ( uint16_t *dest, uint16_t val, uint32_t count)
     return (dest);
 }
 
-
+uint8_t getch (void)
+{
+    uint8_t ch;
+    
+    while (keyboard_ch == NULL)
+    {
+        kdelay (10);
+    }
+    
+    ch = keyboard_ch;
+    keyboard_ch = NULL;     // reset buffer, kind of hack I know ;)
+    return (ch);
+}
 
 
     

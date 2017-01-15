@@ -376,6 +376,22 @@ uint32_t kfree (uint32_t address)
 void pmem_show_page (uint32_t page)
 {
     uint16_t b;
+    uint32_t cursor_x, cursor_y;
+    
+    if (page >= PAGES)
+    {
+        // ERROR out of range, return
+        return;
+    }
+    
+    kprint_int (page * PAGE_BITS * MEM_BLOCK_SIZE, 16);
+    fb_get_cursor (&cursor_x, &cursor_y);
+    
+    if (cursor_x < 15)
+    {
+        cursor_x = 15;
+        fb_set_cursor (cursor_x, cursor_y);
+    }
     
     for (b = 0; b < PAGE_BITS; b++)
     {

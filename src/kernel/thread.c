@@ -17,6 +17,8 @@
 ThreadContext* listHead = NULL;
 ThreadContext* currentContext = NULL;
 
+
+
 void thread_init(uint32_t baseContextAddress)
 {
 	kprint ("Initializing threading..."); kprint_newline ();
@@ -43,6 +45,9 @@ void thread_create(uint32_t contextAddress, uint32_t stackStart, uint32_t stackS
 	
 	context->eip = entryPoint;
 	
+    context->priority = 0;
+    context->next_switch = 0;
+    
 	/* We are building this stack here:
      *                     ...
      *          |                        |
@@ -71,32 +76,119 @@ void thread_create(uint32_t contextAddress, uint32_t stackStart, uint32_t stackS
 	cur->next = context;
 }
 
+void thread_exit (uint32_t ret_code)
+{
+    /* exit thread, remove thread from list */
+    // ThreadContext* currentContext;
+    ThreadContext* search = listHead;
+    
+    while (search->next != currentContext)
+    {
+        search = search->next;
+    }
+    
+    /* skip current thread in previous thread->next */
+    search->next = currentContext->next;
+    
+    kfree (currentContext->esp);
+    kfree (currentContext);
+}
+    
+void thread_set_priority (int32_t priority)
+{
+    currentContext->priority = priority;
+}
+    
+    
+
 static inline void interrupts_disable(void) __attribute__((always_inline));
 static inline void interrupts_disable(void)
 {
     asm volatile ("cli");
 }
 
+uint32_t thread_fair_schedule (void)
+{
+    /* get number of current threads */
+    uint32_t threads = 0;
+    uint32_t ticks_per_sec = 100;
+    uint32_t fair_schedule = 0;
+    ThreadContext* search = listHead;
+    
+    while (search->next != NULL)
+    {
+        threads++;
+        search = search->next;
+    }
+    
+    if (threads > 0)
+    {
+        fair_schedule = ticks_per_sec / threads;
+        fair_schedule = ticks_per_sec / fair_schedule;
+    }
+    
+    return (fair_schedule);
+}
+    
+
 void thread_schedule(registers_t* oldState)
 {
+    uint8_t do_schedule = 0;
+    uint32_t fair_schedule = thread_fair_schedule ();
+    
 	//print_string_static("Scheduling...\n");
 	interrupts_disable();
     
-	thread_saveContext(oldState);
-	//print_string_static("Old context saved...\n");
+    if (fair_schedule > 0)
+    {
+        // number of tasks greater as zero -> fair_schedule is not zero
+        if (currentContext->next_switch == 0)
+        {
+            if (currentContext->priority >= 0)
+            {
+                currentContext->next_switch = clock () + (fair_schedule * currentContext->priority);
+            }
+            else
+            {
+                if (currentContext->priority < 0)
+                {
+                    currentContext->next_switch = clock () + 1;
+                }
+                else
+                {
+                    currentContext->next_switch = clock () + fair_schedule;
+                }
+            }
+        }
+        else
+        {
+            if (currentContext->next_switch <= clock ())
+            {
+                /* time to switch to next task */
+                currentContext->next_switch = 0;
+                do_schedule = 1;
+            }
+        }
+    }
+    
+    if (do_schedule == 1)
+    {
+        thread_saveContext(oldState);
+        //print_string_static("Old context saved...\n");
 	
-	ThreadContext* next;
-	if(currentContext->next == NULL)
-		next = listHead;
-	else
-		next = currentContext->next;
+        ThreadContext* next;
+        if(currentContext->next == NULL)
+            next = listHead;
+        else
+            next = currentContext->next;
 	
-	currentContext = next;
-	/*print_string_static("New thread context is at ");
-	print_integer_hex((uint32_t)currentContext);
-	print_string_static("\n");*/
+        currentContext = next;
+        /*print_string_static("New thread context is at ");
+        print_integer_hex((uint32_t)currentContext);
+        print_string_static("\n");*/
 	
-	thread_switchToContext(currentContext);
+        thread_switchToContext(currentContext);
+    }
 }
 
 

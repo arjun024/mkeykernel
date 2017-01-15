@@ -12,11 +12,6 @@
 
 void jump_usermode (void);
 
-/* there are 25 lines each of 80 columns; each element takes 2 bytes */
-#define LINES 25
-#define COLUMNS_IN_LINE 80
-#define BYTES_FOR_EACH_ELEMENT 2
-#define SCREENSIZE BYTES_FOR_EACH_ELEMENT * COLUMNS_IN_LINE * LINES
 
 #define KEYBOARD_DATA_PORT 0x60
 #define KEYBOARD_STATUS_PORT 0x64
@@ -25,12 +20,6 @@ void jump_usermode (void);
 #define KERNEL_CODE_SEGMENT_OFFSET 0x08
 
 #define ENTER_KEY_CODE 0x1C
-
-/* kernel debugging mode */
-uint8_t debug_mode = 0;
-uint8_t command_mode = 0;
-uint8_t command[256];
-int16_t com_ind = 0;
 
 
 /* memory */
@@ -42,7 +31,11 @@ uint32_t mem_use_address = 0x400000;
 extern uint8_t keyboard_map[128];
 extern uint8_t keyboard_shift_map[128];
 
+// keyboard buffer
+uint8_t keyboard_ch = NULL;
+
 extern void load_idt(unsigned long *idt_ptr);
+extern void enter_usermode (void);
 
 void timerHandler(registers_t* regs);
 void thread(uint32_t argument);
@@ -93,7 +86,6 @@ typedef struct multiboot_memory_map {
 
 
 // threading 
-uint8_t threading = 0;
 uint8_t threads_request = 0;
 
 void kb_init(void)
@@ -135,6 +127,10 @@ void kprint(const char *str)
         }
         else
         {
+            // new
+            
+            fb_current_loc = (fb_cursor_y * BYTES_FOR_EACH_ELEMENT * COLUMNS_IN_LINE) + (fb_cursor_x * BYTES_FOR_EACH_ELEMENT); 
+            
             if (fb_cursor_x < COLUMNS_IN_LINE - 1)
             {
                 fb_cursor_x = fb_cursor_x + 1;
@@ -271,6 +267,20 @@ void fb_set_color (unsigned char forecolor, unsigned char backcolor)
     fb_color = (backcolor << 4) | (forecolor & 0x0F);
 }
 
+void fb_get_cursor (uint32_t *x, uint32_t *y)
+{
+    *x = fb_cursor_x;
+    *y = fb_cursor_y;
+}
+
+void fb_set_cursor (uint32_t x, uint32_t y)
+{
+    fb_move_cursor (y * COLUMNS_IN_LINE + x);
+    
+    fb_cursor_x = x;
+    fb_cursor_y = y;
+}
+
 void div_by_zero_handler_main (void)
 {
     fb_set_color (FB_RED, FB_BLACK);
@@ -287,6 +297,124 @@ void div_by_zero ()
     i = 23 / 0;
 }
 
+void kshell (uint32_t argument)
+{
+    uint8_t ch;
+    uint8_t command[256];
+    uint8_t command_ind = 0;
+    
+    command[0] = '\0';
+    
+    uint8_t input[256];
+    uint8_t input_ind = 0;
+    
+    input[0] = '\0';
+    
+    uint32_t i, page_start, page_end;
+    
+    kprint ("Welcome to ksh, the kernel shell."); kprint_newline();
+    
+    while (1)
+    {
+        fb_set_color (FB_WHITE, FB_BLACK);
+        kprint ("help = list commands ");
+        fb_set_color (FB_LIGHT_BLUE, FB_BLACK);
+        kprint ("user");
+        fb_set_color (FB_GREEN, FB_BLACK);
+        kprint ("@");
+        fb_set_color (FB_RED, FB_BLACK);
+        kprint ("ksh> ");
+        fb_set_color (FB_WHITE, FB_BLACK);
+        command_ind = 0;
+        command[0] = '\0';
+        
+        kshell_loop:
+        ch = getch ();        // blocking call
+        if (ch != '\r' && ch != '\b')
+        {
+            command[command_ind] = ch;
+            if (command_ind < 256)
+            {
+                command_ind++;
+                goto kshell_loop;
+            }
+        }
+        else
+        {
+            if (ch == '\r')
+            {
+                // return char, check if command
+                command[command_ind] = '\0';
+            
+                if (strcmp (command, "tasks") == 0)
+                {
+                    run_threads ();
+                }
+            
+                if (strcmp (command, "page") == 0)
+                {
+                    kprint ("start page block? ");
+                    command_ind = 0;
+                    
+                    input_ind = 0; input[0] = '\0';
+                    
+                    page_loop:
+                    ch = getch ();        // blocking call
+                    if (ch != '\r' && ch != '\b')
+                    {
+                        input[input_ind] = ch;
+                        if (input_ind < 256)
+                        {
+                            input_ind++;
+                            goto page_loop;
+                        }
+                    }
+                    input[input_ind] = '\0';
+                    page_start = atoi (input);
+                    page_end = page_start + 23;
+                    
+                    for (i = page_start; i <= page_end; i++)
+                    {
+                        pmem_show_page (i);
+                    }
+                }   
+            
+                if (strcmp (command, "loopmark") == 0)
+                {
+                    loop_mark ();
+                }
+            
+                if (strcmp (command, "help") == 0)
+                {
+                    kprint ("commands: page [list memory pages], loopmark [simple benchmark]"); kprint_newline ();
+                    kprint ("tasks [multithreading demo]"); kprint_newline ();
+                }
+            }
+            else
+            {
+                // backspace
+                
+                if (command_ind > 0)
+                {
+                    command_ind = command_ind - 1;
+                    command[command_ind] = '\0';
+                    goto kshell_loop;
+                }
+            }
+        }
+    }
+}
+    
+void run_kshell (void)
+{
+    uint8_t *ksh_base = (uint8_t *) kmalloc (4096 * 2);
+    uint8_t *ksh_context = (uint8_t *) kmalloc (4096);
+    uint8_t *ksh_stack = (uint8_t *) kmalloc (4096 * 2);
+    
+    thread_init(ksh_base);
+	thread_create(ksh_context, ksh_stack, 4096 * 2, (uint32_t)kshell, 0x61);
+}
+
 void keyboard_handler(registers_t* regs)
 {
 	uint8_t status;
@@ -297,7 +425,6 @@ void keyboard_handler(registers_t* regs)
     /* debug */
     uint32_t i;
     
-    
 	status = inb(KEYBOARD_STATUS_PORT);
 	/* Lowest bit of status will be set if buffer is not empty */
 	if (status & 0x01) {
@@ -307,53 +434,13 @@ void keyboard_handler(registers_t* regs)
 
 		if(keycode == ENTER_KEY_CODE) {
 			kprint_newline();
-            
-            if (command_mode)
-            {
-                command[com_ind] = '\0';
-                
-                kprint (command); kprint ("> ");
-                if (strcmp (command, "div") == 0)
-                {
-                    div_by_zero ();
-                }
-                
-                if (strcmp (command, "page") == 0)
-                {
-                    command[0] = '\0'; com_ind = 0;
-                
-                    for (i = 0; i < LINES -1; i++)
-                    {
-                        pmem_show_page (i);
-                    }    
-                }
-                
-                if (strcmp (command, "tasks") == 0)
-                {
-                    command[0] = '\0'; com_ind = 0;
-                
-                    threads_request = 1;
-                }
-                
-                command[0] = '\0';
-                com_ind = 0;
-            }
-            
-			return;
+            keyboard_ch = '\r';
+            return;
 		}
 
 		if (keycode == '\b')
         {
             // backspace
-            
-            if (command_mode == 1)
-            {
-                if (com_ind >= 2)
-                {
-                    com_ind = com_ind - 2;
-                    command[com_ind] = '\0';
-                }
-            }
         }    
         
         if (keycode & 0x80)
@@ -364,91 +451,35 @@ void keyboard_handler(registers_t* regs)
         {
             pressed = 1;
         }
-    
-        if (keycode == KEY_SCAN_ESCAPE)
+        
+        if (keycode == KEY_SCAN_LEFT_SHIFT || keycode == KEY_SCAN_RIGHT_SHIFT)
         {
-            /* switch debug mode on/off */
-            if (debug_mode == 0)
-            {
-                debug_mode = 1;
-            }
-            else
-            {
-                debug_mode = 0;
-            }
+            /* uppercase table */
+            keyboard_shift = 1;
         }
         
-        if (keycode == KEY_SCAN_F1 || keycode == KEY_SCAN_CTRL_LEFT)
+        if (keycode == KEY_SCAN_LEFT_SHIFT_RELEASED || keycode == KEY_SCAN_RIGHT_SHIFT_RELEASED)
         {
-            /* switch command console on */
-            
-            if (command_mode == 0)
-            {
-                command_mode = 1;
-                
-                fb_set_color (FB_RED, FB_BLACK);
-                kprint ("COMMAND MODE"); kprint_newline ();
-                kprint ("press F1 to EXIT"); kprint_newline ();
-                kprint ("commands:"); kprint_newline();
-                kprint ("div [division by zero interrupt check]"); kprint_newline ();
-                kprint ("page [show usage of pages]"); kprint_newline ();
-                kprint ("tasks [multitasking demo]"); kprint_newline ();
-                kprint ("press ENTER for prompt!"); kprint_newline ();
-            }
-            else
-            {
-                command_mode = 0;
-                command[0] = '\0'; com_ind = 0;
-                fb_set_color (FB_WHITE, FB_BLACK);
-            }
+            /* lowercase table */
+            keyboard_shift = 0;
         }
-            
-        
-        if (debug_mode)
-        {
-            kprint_int (keycode, 16);
-            kprint_newline ();
-        }
-        else
-        {
-            if (keycode == KEY_SCAN_LEFT_SHIFT || keycode == KEY_SCAN_RIGHT_SHIFT)
-            {
-                /* uppercase table */
-                keyboard_shift = 1;
-            }
-        
-            if (keycode == KEY_SCAN_LEFT_SHIFT_RELEASED || keycode == KEY_SCAN_RIGHT_SHIFT_RELEASED)
-            {
-                /* lowercase table */
-                keyboard_shift = 0;
-            }
           
-            if (pressed == 1)
+        if (pressed == 1)
+        {
+            if (keyboard_shift == 1)
             {
-                if (keyboard_shift == 1)
-                {
-                    ch[0] = keyboard_shift_map[(unsigned char) keycode];
+                ch[0] = keyboard_shift_map[(unsigned char) keycode];
                     
-                    if (command_mode)
-                    {
-                        command[com_ind] = ch[0];
-                        com_ind++;
-                    }
-                }
-                else
-                {
-                    ch[0] = keyboard_map[(unsigned char) keycode];
-                    
-                    if (command_mode)
-                    {
-                        command[com_ind] = ch[0];
-                        com_ind++;
-                    }
-                }
-		
-                ch[1] = '\0';
-                kprint (ch);
             }
+            else
+            {
+                ch[0] = keyboard_map[(unsigned char) keycode];
+            }        
+               
+            ch[1] = '\0';
+            kprint (ch);
+            
+            keyboard_ch = ch[0];
         }
 	}
 }
@@ -502,49 +533,73 @@ void timerHandler(registers_t* regs)
 {
     clock_ticks++;
 	
-    if (threading)
-    {
-        thread_schedule(regs);
-    }
+    thread_schedule (regs);
+
     // kprint ("clock: "); kprint_int (clock_ticks, 10); kprint_newline ();
 }
  
 void thread_a(uint32_t argument)
 {
     uint32_t ticks;
+    uint32_t ticks_max = clock () + 10000;
+    
+    thread_set_priority (5);        // increase thread priority
 	for(;;)
 	{
         ticks = clock ();
 		kprint ("thread A: "); kprint_int (ticks, 10); kprint_newline ();
-		kdelay (50);
+		kdelay (5);
+        
+        if (ticks >= ticks_max) thread_exit (0);
 	}
 }
   
 void thread_b(uint32_t argument)
 {
     uint32_t ticks;
+    uint32_t ticks_max = clock () + 10000;
+    
+    thread_set_priority (-10);      // decrease thread priority
 	for(;;)
 	{
         ticks = clock ();
 		kprint ("thread B: "); kprint_int (ticks, 10); kprint_newline ();
-		kdelay (50);
+		kdelay (5);
+        
+        if (ticks >= ticks_max) thread_exit (0);
+	}
+}
+  
+void thread_c(uint32_t argument)
+{
+    uint32_t ticks;
+    uint32_t ticks_max = clock () + 10000;
+    
+    // normal priority = 0
+	for(;;)
+	{
+        ticks = clock ();
+		kprint ("thread C: "); kprint_int (ticks, 10); kprint_newline ();
+		kdelay (5);
+        
+        if (ticks >= ticks_max) thread_exit (0);
 	}
 }
   
 void run_threads (void)
 {
-    uint8_t *thread_base = (uint8_t *) kmalloc (20000);
     uint8_t *thread_a_context = (uint8_t *) kmalloc (4096);
     uint8_t *thread_a_stack = (uint8_t *) kmalloc (4096);
 
     uint8_t *thread_b_context = (uint8_t *) kmalloc (4096);
     uint8_t *thread_b_stack = (uint8_t *) kmalloc (4096);
     
-    thread_init(thread_base);
+    uint8_t *thread_c_context = (uint8_t *) kmalloc (4096);
+    uint8_t *thread_c_stack = (uint8_t *) kmalloc (4096);
+    
 	thread_create(thread_a_context, thread_a_stack, 4096, (uint32_t)thread_a, 0x61);
     thread_create(thread_b_context, thread_b_stack, 4096, (uint32_t)thread_b, 0x61);
-    
-    threading = 1;
+    thread_create(thread_c_context, thread_c_stack, 4096, (uint32_t)thread_c, 0x61);
 }
     
   
@@ -573,7 +628,6 @@ void kmain (multiboot_info_t* mbt, unsigned int magic)
     
     uint32_t pages_free;
     uint64_t ram_free;
-    command[0] = '\0';
     
 	fb_clear_screen();
     
@@ -635,7 +689,7 @@ void kmain (multiboot_info_t* mbt, unsigned int magic)
                 {
                     mem_start = (uint32_t) 0x1000;       /* skip first page */
                 }
-                        
+                
                 mem = pmem_set_bitmap (mem_start, mem_end, FREE);
                 if (mem == MEM_ERR_OK)
                 {
@@ -655,6 +709,7 @@ void kmain (multiboot_info_t* mbt, unsigned int magic)
                         kprint ("alloc error");
                     } 
                 }
+                
                 kprint_newline ();
             }
         }
@@ -664,12 +719,14 @@ void kmain (multiboot_info_t* mbt, unsigned int magic)
 	
 	pmem_set_first_page ();    /* so no null pointer for free mem block can exist */
 	
+    /*
 	mem = pmem_set_bitmap ((uint32_t) 0xF00000, (uint32_t) 0xFFFFFF, ALLOCATE);
     if (mem != MEM_ERR_OK)
     {
         kprint ("MEMORY ERROR: mark reserved");
         kprint_newline ();
     }
+    */
     
     pages_free = pmem_count_free_pages ();
     ram_free = (pages_free * 4096) / 1024 /1024;
@@ -728,24 +785,16 @@ void kmain (multiboot_info_t* mbt, unsigned int magic)
     }
     */
     
-    kprint ("F1 or CTRL-LEFT = command console"); kprint_newline();
-    kprint_newline ();
-    
     kprint ("READY"); kprint_newline ();
     
     pic_unmask_irq(IRQ_TIMER);
     
     
-    // jump_usermode ();
+    // enter_usermode ();
+    run_kshell();
     
-	while(1)
+    while (1)
     {
-        kdelay (200);
-        
-        if (threads_request == 1)
-        {
-            run_threads();
-            threads_request = 0;
-        }
+        kdelay (100);
     }
 }

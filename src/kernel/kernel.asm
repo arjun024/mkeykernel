@@ -13,8 +13,10 @@ global start
 global gdt_fush
 global stack_space
 global jump_usermode
+global enter_usermode
 
 extern kmain 		;this is defined in the c file
+extern run_kshell
 
 global loadPageDirectory
 loadPageDirectory:
@@ -68,7 +70,7 @@ tss_flush:
  
 global jump_usermode ;you may need to remove this _ to work right.. 
 jump_usermode:
-; extern print_a
+extern run_kshell
      mov ax,0x23
      mov ds,ax
      mov es,ax 
@@ -80,10 +82,33 @@ jump_usermode:
      push eax ;push our current stack just for the heck of it
      pushf
      push 0x1B; ;user code segment with bottom 2 bits set for ring 3
-     ; call print_a ;may need to remove the _ for this to work right 
+     call run_kshell ;may need to remove the _ for this to work right 
      iret
  
-    
+
+global enter_usermode
+enter_usermode:
+    cli
+    mov ax, 0x23	; user mode data selector is 0x20 (GDT entry 3). Also sets RPL to 3
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+; Now we can perform the switch to user mode. This is done by building the stack frame for IRET and issuing the IRET:
+    push 0x23		; SS, notice it uses same selector as above
+    push esp		; ESP
+    pushfd			; EFLAGS
+    push 0x1b		; CS, user mode code selector is 0x18. With RPL 3 this is 0x1b
+    lea eax, [a]		; EIP first
+    push eax
+
+    call run_kshell
+    iretd
+a:
+    add esp, 4 ; fix stack
+    rts
+ 
+ 
 start:
 	cli 				;block interrupts
 	mov esp, stack_space
