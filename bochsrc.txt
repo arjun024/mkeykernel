@@ -1,4 +1,4 @@
-    megs:            32
+    megs:            512
     display_library: sdl
     romimage:        file=/usr/share/bochs/BIOS-bochs-latest
     vgaromimage:     file=/usr/share/bochs/VGABIOS-lgpl-latest

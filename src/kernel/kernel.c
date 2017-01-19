@@ -9,6 +9,7 @@
 #include "ports.h"
 #include "interrupts.h"
 #include "keyboard_map.h"
+#include "message.h"
 
 void jump_usermode (void);
 
@@ -25,7 +26,7 @@ void jump_usermode (void);
 /* memory */
 uint32_t mem_start_address = 0x100000;
 uint32_t mem_end_address;
-uint32_t mem_use_address = 0x400000;
+uint32_t mem_use_address = 0x800000;
 
 
 extern uint8_t keyboard_map[128];
@@ -310,7 +311,7 @@ void kshell (uint32_t argument)
     
     input[0] = '\0';
     
-    uint32_t i, page_start, page_end;
+    uint32_t i, page_start, page_end, pid;
     
     kprint ("Welcome to ksh, the kernel shell."); kprint_newline();
     
@@ -351,6 +352,11 @@ void kshell (uint32_t argument)
                     run_threads ();
                 }
             
+                if (strcmp (command, "btasks") == 0)
+                {
+                    run_threads_background ();
+                }
+            
                 if (strcmp (command, "page") == 0)
                 {
                     kprint ("start page block? ");
@@ -384,10 +390,43 @@ void kshell (uint32_t argument)
                     loop_mark ();
                 }
             
+                if (strcmp (command, "threads") == 0)
+                {
+                    thread_show_info ();
+                }
+                
+                if (strcmp (command, "kill") == 0)
+                {
+                    kprint ("pid? ");
+                    command_ind = 0;
+                    
+                    input_ind = 0; input[0] = '\0';
+                    
+                    kill_loop:
+                    ch = getch ();        // blocking call
+                    if (ch != '\r' && ch != '\b')
+                    {
+                        input[input_ind] = ch;
+                        if (input_ind < 256)
+                        {
+                            input_ind++;
+                            goto kill_loop;
+                        }
+                    }
+                    input[input_ind] = '\0';
+                    pid = atoi (input);
+                    
+                    if (thread_kill (pid) == 0)
+                    {
+                        kprint ("thread killed!"); kprint_newline ();
+                    }
+                }
+                
                 if (strcmp (command, "help") == 0)
                 {
                     kprint ("commands: page [list memory pages], loopmark [simple benchmark]"); kprint_newline ();
-                    kprint ("tasks [multithreading demo]"); kprint_newline ();
+                    kprint ("tasks [multithreading demo], btasks [background threads demo], threads [show number of running threads]"); kprint_newline ();
+                    kprint ("kill [kill thread]"); kprint_newline ();
                 }
             }
             else
@@ -412,7 +451,7 @@ void run_kshell (void)
     uint8_t *ksh_stack = (uint8_t *) kmalloc (4096 * 2);
     
     thread_init(ksh_base);
-	thread_create(ksh_context, ksh_stack, 4096 * 2, (uint32_t)kshell, 0x61);
+	thread_create(ksh_context, ksh_stack, 4096 * 2, (uint32_t)kshell, 0x61, "kshell");
 }
 
 void keyboard_handler(registers_t* regs)
@@ -543,6 +582,8 @@ void thread_a(uint32_t argument)
     uint32_t ticks;
     uint32_t ticks_max = clock () + 10000;
     
+    uint8_t data[20];
+    
     thread_set_priority (5);        // increase thread priority
 	for(;;)
 	{
@@ -551,6 +592,19 @@ void thread_a(uint32_t argument)
 		kdelay (5);
         
         if (ticks >= ticks_max) thread_exit (0);
+        
+        if (message_read (&data, 0) == 0)
+        {
+            // end signal -> EXIT
+            fb_set_color (FB_RED, FB_BLACK);
+            kprint ("thread A: got SHUTDOWN MESSAGE: "); kprint (data); kprint_newline();
+               
+            if (strcmp (data, "kill") == 0)
+            {
+                fb_set_color (FB_WHITE, FB_BLACK);
+                thread_exit (0);
+            }
+        }
 	}
 }
   
@@ -588,6 +642,8 @@ void thread_c(uint32_t argument)
   
 void run_threads (void)
 {
+    uint32_t shutdown_thread = clock () + 5000;
+    
     uint8_t *thread_a_context = (uint8_t *) kmalloc (4096);
     uint8_t *thread_a_stack = (uint8_t *) kmalloc (4096);
 
@@ -597,11 +653,57 @@ void run_threads (void)
     uint8_t *thread_c_context = (uint8_t *) kmalloc (4096);
     uint8_t *thread_c_stack = (uint8_t *) kmalloc (4096);
     
-	thread_create(thread_a_context, thread_a_stack, 4096, (uint32_t)thread_a, 0x61);
-    thread_create(thread_b_context, thread_b_stack, 4096, (uint32_t)thread_b, 0x61);
-    thread_create(thread_c_context, thread_c_stack, 4096, (uint32_t)thread_c, 0x61);
-}
+	thread_create(thread_a_context, thread_a_stack, 4096, (uint32_t)thread_a, 0, "a-print");
+    thread_create(thread_b_context, thread_b_stack, 4096, (uint32_t)thread_b, 1, "b-print");
+    thread_create(thread_c_context, thread_c_stack, 4096, (uint32_t)thread_c, 2, "c-print");
     
+    while (clock () < shutdown_thread)
+    {
+        kdelay (100);
+    }
+    message_send ("kill", 0, 5);
+}
+
+
+void thread_a_backgr(uint32_t argument)
+{
+    uint32_t ticks;
+    uint32_t ticks_max = clock () + 10000;
+    
+	for(;;)
+	{
+        ticks = clock ();
+		kdelay (5);
+        
+        if (ticks >= ticks_max) thread_exit (0);
+	}
+}
+  
+void thread_b_backgr(uint32_t argument)
+{
+    uint32_t ticks;
+    uint32_t ticks_max = clock () + 10000;
+    
+	for(;;)
+	{
+        ticks = clock ();
+		kdelay (5);
+        
+        if (ticks >= ticks_max) thread_exit (0);
+	}
+}
+
+void run_threads_background (void)
+{
+    uint8_t *thread_a_context = (uint8_t *) kmalloc (4096);
+    uint8_t *thread_a_stack = (uint8_t *) kmalloc (4096);
+
+    uint8_t *thread_b_context = (uint8_t *) kmalloc (4096);
+    uint8_t *thread_b_stack = (uint8_t *) kmalloc (4096);
+    
+	thread_create(thread_a_context, thread_a_stack, 4096, (uint32_t)thread_a_backgr, 0, "a");
+    thread_create(thread_b_context, thread_b_stack, 4096, (uint32_t)thread_b_backgr, 1, "b");
+}
   
 void kmain (multiboot_info_t* mbt, unsigned int magic)
 {
@@ -792,6 +894,8 @@ void kmain (multiboot_info_t* mbt, unsigned int magic)
     
     // enter_usermode ();
     run_kshell();
+    
+    //kshell (0);
     
     while (1)
     {

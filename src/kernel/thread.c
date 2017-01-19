@@ -17,7 +17,20 @@
 ThreadContext* listHead = NULL;
 ThreadContext* currentContext = NULL;
 
+uint32_t thread_number_of_threads (void)
+{
+    /* get number of current threads */
+    uint32_t threads = 0;
+    ThreadContext* search = listHead;
 
+    while (search->next != NULL)
+    {
+        threads++;
+        search = search->next;
+    }
+    
+    return (threads);
+}
 
 void thread_init(uint32_t baseContextAddress)
 {
@@ -29,7 +42,7 @@ void thread_init(uint32_t baseContextAddress)
 	print_string_static("\n");*/
 }
 
-void thread_create(uint32_t contextAddress, uint32_t stackStart, uint32_t stackSize, uint32_t entryPoint, uint32_t arg)
+void thread_create(uint32_t contextAddress, uint32_t stackStart, uint32_t stackSize, uint32_t entryPoint, uint32_t arg, uint8_t *name)
 {
 	ThreadContext* context = (ThreadContext*)contextAddress;
 	memset(context, 0, sizeof(ThreadContext));
@@ -45,8 +58,14 @@ void thread_create(uint32_t contextAddress, uint32_t stackStart, uint32_t stackS
 	
 	context->eip = entryPoint;
 	
-    context->priority = 0;
+    context->priority = THREAD_PRIORITY_NORMAL;
+    context->child_of = currentContext->pid;
+    context->pid = (uint32_t) (thread_number_of_threads () + 1);
+    context->request = THREAD_NO_REQUEST;
+    context->signal = THREAD_BREAK_ALLOWED;
     context->next_switch = 0;
+    
+    strncpy (context->name, name, THREAD_NAME_LEN);
     
 	/* We are building this stack here:
      *                     ...
@@ -93,6 +112,54 @@ void thread_exit (uint32_t ret_code)
     kfree (currentContext->esp);
     kfree (currentContext);
 }
+
+uint32_t thread_kill (uint32_t pid)
+{
+     /* kill thread, remove thread from list */
+     uint8_t found_pid = 0;
+     
+     ThreadContext* search = listHead;
+     ThreadContext* kill;
+     
+     while (found_pid == 0)
+     {
+         if (search->pid == pid)
+         {
+             found_pid = 1;
+             kill = search;
+         }
+         else
+         {
+             search = search->next;
+             if (search->next == NULL)
+             {
+                 // end of threads list, no given pid found
+                 break;
+             }
+         }
+     }
+     
+     if (found_pid)
+     {
+         search = listHead;
+         while (search->next != kill)
+         {
+             search = search->next;
+         }
+         
+         search->next = kill->next;
+         
+         kfree (kill->esp);
+         kfree (kill);
+        
+         return (0);
+     }
+     else
+     {
+         return (1);
+     }
+}
+     
     
 void thread_set_priority (int32_t priority)
 {
@@ -107,6 +174,29 @@ static inline void interrupts_disable(void)
     asm volatile ("cli");
 }
 
+
+   
+void thread_show_info (void)
+{
+    /* show thread infos */
+    uint8_t run = 1;
+    uint32_t threads = 0, mthreads = 0;
+    ThreadContext* search = listHead;
+
+    do
+    {
+        kprint ("thread: '"); kprint (search->name); kprint ("' thread pid: "); kprint_int (search->pid, 10); kprint (", priority: "); kprint_int (search->priority, 10);
+        kprint (", child of: "); kprint_int (search->child_of, 10); kprint_newline ();
+        threads++;
+        
+        if (run == 0 && threads == mthreads) break;
+        search = search->next;
+        if (search->next == NULL) mthreads = threads + 1, run = 0;
+        
+    } while (1);
+    kprint ("total threads running: "); kprint_int (threads, 10); kprint_newline ();
+}
+   
 uint32_t thread_fair_schedule (void)
 {
     /* get number of current threads */

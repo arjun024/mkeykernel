@@ -1,6 +1,7 @@
 #!/bin/bash
 cd src/kernel
 
+rm *.o
 nasm -f elf32 kernel.asm -o kasm.o
 nasm -f elf32 threadS.asm -o threadS.o
 nasm -f elf32 interruptStubs.asm -o interruptStubs.o
@@ -14,8 +15,9 @@ gcc -m32 -c interrupts.c -o interrupts.o
 gcc -m32 -c idt.c -o idt.o
 gcc -m32 -c pit.c -o pit.o
 gcc -m32 -c pic.c -o pic.o
+gcc -m32 -c message.c -o message.o
 
-ld -m elf_i386 -T link.ld -o kernel kasm.o kc.o io.o lib.o gdt.o physmem.o thread.o threadS.o interrupts.o interruptStubs.o idt.o pit.o pic.o
+ld -m elf_i386 -T link.ld -o kernel kasm.o kc.o io.o lib.o gdt.o physmem.o thread.o threadS.o interrupts.o interruptStubs.o idt.o pit.o pic.o message.o
 
 echo "kernel build end, making .iso"
 

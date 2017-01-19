@@ -124,13 +124,47 @@ uint32_t strlen (const uint8_t *str)
     return (slen);
 }
 
+uint8_t *strcpy (uint8_t *dest, uint8_t *src)
+{
+    uint32_t i = 0;
+    
+    while (src[i] != '\0')
+    {
+        dest[i] = src[i];
+        i++;
+    }
+    
+    dest[i] = '\0';
+    
+    return (dest);
+}
+
+uint8_t *strncpy (uint8_t *dest, uint8_t *src, uint32_t len)
+{
+    uint32_t i = 0;
+    while (src[i] != '\0')
+    {
+        dest[i] = src[i];
+        i++;
+        if (i == len) break;
+    }
+    
+    dest[i] = '\0';
+    
+    return (dest);
+}
+
 uint8_t *memcpy (uint8_t *dest, const uint8_t *src, uint32_t count)
 {
     uint32_t i;
     
-    for (i = 1; i <= count; i++)
+    uint8_t *src_ptr = src;
+    uint8_t *dest_ptr = dest;
+    
+
+    while (count-- > 0)
     {
-        dest[i] = src[i];
+        *dest_ptr++ = *src_ptr++;
     }
     
     return (dest);
