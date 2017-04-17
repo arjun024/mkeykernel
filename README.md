@@ -6,13 +6,13 @@ This is a kernel that can read the characters a-z and 0-9 from the keyboard and 
 See the repo [mkernel](http://github.com/arjun024/mkernel) which is a minimal kernel that prints a string on the screen. mkeykernel just extends this to include keyboard support. 
 
 
-####Blog post####
+#### Blog post ####
 
 Kernel 201 - Let’s write a Kernel with keyboard and screen support
 
 (http://arjunsreedharan.org/post/99370248137/kernel-201-lets-write-a-kernel-with-keyboard-and)
 
-####Build commands####
+#### Build commands ####
 ```
 nasm -f elf32 kernel.asm -o kasm.o
 ```
@@ -34,12 +34,12 @@ compile with the `-fno-stack-protector` option:
 gcc -fno-stack-protector -m32 -c kernel.c -o bin/kc.o
 ```
 
-####Test on emulator####
+#### Test on emulator ####
 ```
 qemu-system-i386 -kernel kernel
 ```
 
-####Get to boot####
+#### Get to boot ####
 GRUB requires your kernel executable to be of the pattern `kernel-<version>`.
 
 So, rename the kernel:
