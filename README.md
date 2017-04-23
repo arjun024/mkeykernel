@@ -1,6 +1,26 @@
-mkeykernel
+mkeykernel fork
 =======
 
+I forked mkeykernel.
+I added the following things:
+
+- Frame buffer text scrolling, removes the top line on screen if reached last line on print
+- kprint_int () function to print integer numbers.
+- library with a few new functions
+- ksh a kernel shell
+- multithreading, code taken from a workshop and modified to fit.
+- thread priority settings, see multithread demo.
+- make.sh and run.sh scripts:
+    make.sh compiles the kernel and creates an .iso file.
+    run.sh runs bochs with the created .iso file and starts the kernel
+
+
+I will try to continue work on this kernel.
+
+Stefan Pietzonke  2017
+
+    
+    
 This is a kernel that can read the characters a-z and 0-9 from the keyboard and print them on screen.
 
 See the repo [mkernel](http://github.com/arjun024/mkernel) which is a minimal kernel that prints a string on the screen. mkeykernel just extends this to include keyboard support. 
