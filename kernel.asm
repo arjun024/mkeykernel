@@ -44,7 +44,9 @@ start:
 	cli 				;block interrupts
 	mov esp, stack_space
 	call kmain
+forever:
 	hlt 				;halt the CPU
+	jmp forever
 
 section .bss
 resb 8192; 8KB for stack
