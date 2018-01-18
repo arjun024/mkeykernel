@@ -29,7 +29,7 @@ kernel.c:(.text+0x129): undefined reference to `__stack_chk_fail'
 
 compile with the `-fno-stack-protector` option:
 ```
-gcc -fno-stack-protector -m32 -c kernel.c -o bin/kc.o
+gcc -fno-stack-protector -m32 -c kernel.c -o kc.o
 ```
 
 #### Test on emulator ####
