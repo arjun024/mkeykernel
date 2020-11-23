@@ -3,7 +3,7 @@
  * https://github.com/G33KatWork
  */
 
-
+#include "interrupts.h"
 #include "idt.h"
 #include "types.h"
 
@@ -83,6 +83,6 @@ void idt_install()
 	idt_set_gate(45, (uint32_t)irq13, 0x08, I86_IDT_ATTR_PRESENT | I86_IDT_ATTR_32BIT_INT_GATE | I86_IDT_ATTR_PRIV_KERNEL);
 	idt_set_gate(46, (uint32_t)irq14, 0x08, I86_IDT_ATTR_PRESENT | I86_IDT_ATTR_32BIT_INT_GATE | I86_IDT_ATTR_PRIV_KERNEL);
 	idt_set_gate(47, (uint32_t)irq15, 0x08, I86_IDT_ATTR_PRESENT | I86_IDT_ATTR_32BIT_INT_GATE | I86_IDT_ATTR_PRIV_KERNEL);
-	
+    
 	idt_flush();
 }

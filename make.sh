@@ -5,19 +5,20 @@ rm *.o
 nasm -f elf32 kernel.asm -o kasm.o
 nasm -f elf32 threadS.asm -o threadS.o
 nasm -f elf32 interruptStubs.asm -o interruptStubs.o
-gcc -m32 -c kernel.c -o kc.o
-gcc -m32 -c io.c -o io.o
-gcc -m32 -c lib.c -o lib.o
-gcc -m32 -c gdt.c -o gdt.o
-gcc -m32 -c physmem.c -o physmem.o
-gcc -m32 -c thread.c -o thread.o
-gcc -m32 -c interrupts.c -o interrupts.o
-gcc -m32 -c idt.c -o idt.o
-gcc -m32 -c pit.c -o pit.o
-gcc -m32 -c pic.c -o pic.o
-gcc -m32 -c message.c -o message.o
+clang -m32 -c kernel.c -o kc.o
+clang -m32 -c io.c -o io.o
+clang -m32 -c lib.c -o lib.o
+clang -m32 -c gdt.c -o gdt.o
+clang -m32 -c physmem.c -o physmem.o
+clang -m32 -c thread.c -o thread.o
+clang -m32 -c interrupts.c -o interrupts.o
+clang -m32 -c idt.c -o idt.o
+clang -m32 -c pit.c -o pit.o
+clang -m32 -c pic.c -o pic.o
+clang -m32 -c message.c -o message.o
+clang -m32 -c syscall.c -o syscall.o
 
-ld -m elf_i386 -T link.ld -o kernel kasm.o kc.o io.o lib.o gdt.o physmem.o thread.o threadS.o interrupts.o interruptStubs.o idt.o pit.o pic.o message.o
+ld -m elf_i386 -T link.ld -o kernel kasm.o kc.o io.o lib.o gdt.o physmem.o thread.o threadS.o interrupts.o interruptStubs.o idt.o pit.o pic.o message.o syscall.o
 
 echo "kernel build end, making .iso"
 
@@ -38,4 +39,3 @@ genisoimage -R                  \
 -boot-info-table                \
 -o os.iso                       \
 iso
-

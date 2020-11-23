@@ -51,6 +51,8 @@ typedef struct ThreadContext_
     int32_t   priority;   // task priority
     uint32_t  next_switch; // next thread switch at this clock
     uint8_t name[THREAD_NAME_LEN];  // name of thread, stored if set at thread create
+    uint32_t stack_size;
+    uint32_t stack_start;
 	struct ThreadContext_* next;
 } ThreadContext;
 

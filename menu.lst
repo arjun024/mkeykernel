@@ -1,5 +1,5 @@
 default=0
-    timeout=0
+    timeout=5
 
     title os
     kernel /boot/kernel

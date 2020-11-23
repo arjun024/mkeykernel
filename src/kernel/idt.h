@@ -102,4 +102,6 @@ void irq13(void);
 void irq14(void);
 void irq15(void);
 
+void isr128(void);       // syscall interruot 80
+
 #endif

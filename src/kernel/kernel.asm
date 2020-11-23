@@ -71,6 +71,8 @@ tss_flush:
 global jump_usermode ;you may need to remove this _ to work right.. 
 jump_usermode:
 extern run_kshell
+extern user_print
+     cli
      mov ax,0x23
      mov ds,ax
      mov es,ax 
@@ -82,8 +84,10 @@ extern run_kshell
      push eax ;push our current stack just for the heck of it
      pushf
      push 0x1B; ;user code segment with bottom 2 bits set for ring 3
-     call run_kshell ;may need to remove the _ for this to work right 
      iret
+;end
+ 
+ 
  
 
 global enter_usermode
@@ -102,12 +106,10 @@ enter_usermode:
     lea eax, [a]		; EIP first
     push eax
 
-    call run_kshell
-    iretd
+    iretd               ; itetd
 a:
     add esp, 4 ; fix stack
-    rts
- 
+    ret
  
 start:
 	cli 				;block interrupts
