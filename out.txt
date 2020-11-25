@@ -1,0 +1,314 @@
+In Datei, eingebunden von kernel.c:15:
+protos.h:20:9: Warnung: in Konflikt stehende Typen für eingebaute Funktion »strcmp«; erwartet wurde »int(const char *, const char *)« [-Wbuiltin-declaration-mismatch]
+   20 | int16_t strcmp (const uint8_t * str1, const uint8_t * str2);
+      |         ^~~~~~
+protos.h:1:1: Anmerkung: »strcmp« wird in Header »<string.h>« deklariert
+  +++ |+#include <string.h>
+    1 | // protos.h - function prototypes
+protos.h:21:10: Warnung: in Konflikt stehende Typen für eingebaute Funktion »strlen«; erwartet wurde »unsigned int(const char *)« [-Wbuiltin-declaration-mismatch]
+   21 | uint32_t strlen (const uint8_t *str);
+      |          ^~~~~~
+protos.h:21:10: Anmerkung: »strlen« wird in Header »<string.h>« deklariert
+protos.h:22:10: Warnung: in Konflikt stehende Typen für eingebaute Funktion »strcpy«; erwartet wurde »char *(char *, const char *)« [-Wbuiltin-declaration-mismatch]
+   22 | uint8_t *strcpy (uint8_t *dest, uint8_t *src);
+      |          ^~~~~~
+protos.h:22:10: Anmerkung: »strcpy« wird in Header »<string.h>« deklariert
+protos.h:23:10: Warnung: in Konflikt stehende Typen für eingebaute Funktion »strncpy«; erwartet wurde »char *(char *, const char *, unsigned int)« [-Wbuiltin-declaration-mismatch]
+   23 | uint8_t *strncpy (uint8_t *dest, uint8_t *src, uint32_t len);
+      |          ^~~~~~~
+protos.h:23:10: Anmerkung: »strncpy« wird in Header »<string.h>« deklariert
+protos.h:24:10: Warnung: in Konflikt stehende Typen für eingebaute Funktion »memcpy«; erwartet wurde »void *(void *, const void *, unsigned int)« [-Wbuiltin-declaration-mismatch]
+   24 | uint8_t *memcpy (uint8_t *dest, const uint8_t *src, uint32_t count);
+      |          ^~~~~~
+protos.h:24:10: Anmerkung: »memcpy« wird in Header »<string.h>« deklariert
+protos.h:25:10: Warnung: in Konflikt stehende Typen für eingebaute Funktion »memset«; erwartet wurde »void *(void *, int,  unsigned int)« [-Wbuiltin-declaration-mismatch]
+   25 | uint8_t *memset (uint8_t *dest, uint8_t val, uint32_t count);
+      |          ^~~~~~
+protos.h:25:10: Anmerkung: »memset« wird in Header »<string.h>« deklariert
+kernel.c: In Funktion »div_by_zero«:
+kernel.c:301:12: Warnung: Division durch Null [-Wdiv-by-zero]
+  301 |     i = 23 / 0;
+      |            ^
+kernel.c: In Funktion »event_handler«:
+kernel.c:482:7: Warnung: Implizite Deklaration der Funktion »message_read«; meinten Sie »thread_message_read«? [-Wimplicit-function-declaration]
+  482 |   if (message_read (&msg, &sender) == 0)
+      |       ^~~~~~~~~~~~
+      |       thread_message_read
+kernel.c:488:5: Warnung: Implizite Deklaration der Funktion »message_send« [-Wimplicit-function-declaration]
+  488 |     message_send (keyboard_ch, sender, 1);
+      |     ^~~~~~~~~~~~
+kernel.c: In Funktion »run_event_handler«:
+kernel.c:503:17: Warnung: Übergabe des Arguments 1 von »thread_init« wandelt eine Zahl in einen Zeiger um, ohne explizite Typkonvertierung [-Wint-conversion]
+  503 |     thread_init(base);
+      |                 ^~~~
+      |                 |
+      |                 uint8_t * {alias unsigned char *}
+In Datei, eingebunden von kernel.c:15:
+protos.h:44:27: Anmerkung: »uint32_t« {alias »unsigned int«} erwartet, aber Argument hat Typ »uint8_t *« {alias »unsigned char *«}
+   44 | void thread_init(uint32_t baseContextAddress);
+      |                  ~~~~~~~~~^~~~~~~~~~~~~~~~~~
+kernel.c:504:16: Warnung: Übergabe des Arguments 1 von »thread_create« wandelt eine Zahl in einen Zeiger um, ohne explizite Typkonvertierung [-Wint-conversion]
+  504 |  thread_create(event_context, event_stack, 4096 * 2, (uint32_t)event_handler, 0, "event_handler");
+      |                ^~~~~~~~~~~~~
+      |                |
+      |                uint8_t * {alias unsigned char *}
+In Datei, eingebunden von kernel.c:15:
+protos.h:45:29: Anmerkung: »uint32_t« {alias »unsigned int«} erwartet, aber Argument hat Typ »uint8_t *« {alias »unsigned char *«}
+   45 | void thread_create(uint32_t contextAddress, uint32_t stackStart, uint32_t stackSize, uint32_t entryPoint, uint32_t arg, uint8_t *name);
+      |                    ~~~~~~~~~^~~~~~~~~~~~~~
+kernel.c:504:31: Warnung: Übergabe des Arguments 2 von »thread_create« wandelt eine Zahl in einen Zeiger um, ohne explizite Typkonvertierung [-Wint-conversion]
+  504 |  thread_create(event_context, event_stack, 4096 * 2, (uint32_t)event_handler, 0, "event_handler");
+      |                               ^~~~~~~~~~~
+      |                               |
+      |                               uint8_t * {alias unsigned char *}
+In Datei, eingebunden von kernel.c:15:
+protos.h:45:54: Anmerkung: »uint32_t« {alias »unsigned int«} erwartet, aber Argument hat Typ »uint8_t *« {alias »unsigned char *«}
+   45 | void thread_create(uint32_t contextAddress, uint32_t stackStart, uint32_t stackSize, uint32_t entryPoint, uint32_t arg, uint8_t *name);
+      |                                             ~~~~~~~~~^~~~~~~~~~
+kernel.c: In Funktion »kmain«:
+kernel.c:770:5: Warnung: Implizite Deklaration der Funktion »set_gdt« [-Wimplicit-function-declaration]
+  770 |     set_gdt ();         /* init memory GDT */
+      |     ^~~~~~~
+kernel.c:774:2: Warnung: Implizite Deklaration der Funktion »pic_init« [-Wimplicit-function-declaration]
+  774 |  pic_init();     //set up PIC
+      |  ^~~~~~~~
+kernel.c:778:2: Warnung: Implizite Deklaration der Funktion »pit_init« [-Wimplicit-function-declaration]
+  778 |  pit_init(100);
+      |  ^~~~~~~~
+kernel.c:785:36: Warnung: Initialisierung von »multiboot_memory_map_t *« {alias »struct multiboot_memory_map *«} von »long unsigned int« wandelt eine Zahl in einen Zeiger um, ohne explizite Typkonvertierung [-Wint-conversion]
+  785 |     multiboot_memory_map_t* mmap = mbt->mmap_addr;
+      |                                    ^~~
+kernel.c:802:13: Warnung: Vergleich zwischen Zeiger und Ganzzahl
+  802 |  while(mmap < mbt->mmap_addr + mbt->mmap_length)
+      |             ^
+kernel.c:907:5: Warnung: Implizite Deklaration der Funktion »pic_unmask_irq« [-Wimplicit-function-declaration]
+  907 |     pic_unmask_irq(IRQ_KEYBOARD);
+      |     ^~~~~~~~~~~~~~
+lib.c: In Funktion »kprint_int«:
+lib.c:93:5: Warnung: Implizite Deklaration der Funktion »kprint«; meinten Sie »kprint_int«? [-Wimplicit-function-declaration]
+   93 |     kprint (str);
+      |     ^~~~~~
+      |     kprint_int
+lib.c: Auf höchster Ebene:
+lib.c:96:9: Warnung: in Konflikt stehende Typen für eingebaute Funktion »strcmp«; erwartet wurde »int(const char *, const char *)« [-Wbuiltin-declaration-mismatch]
+   96 | int16_t strcmp (const uint8_t * str1, const uint8_t * str2)
+      |         ^~~~~~
+lib.c:4:1: Anmerkung: »strcmp« wird in Header »<string.h>« deklariert
+    3 | #include "types.h"
+  +++ |+#include <string.h>
+    4 | 
+lib.c:114:10: Warnung: in Konflikt stehende Typen für eingebaute Funktion »strlen«; erwartet wurde »unsigned int(const char *)« [-Wbuiltin-declaration-mismatch]
+  114 | uint32_t strlen (const uint8_t *str)
+      |          ^~~~~~
+lib.c:114:10: Anmerkung: »strlen« wird in Header »<string.h>« deklariert
+lib.c:127:10: Warnung: in Konflikt stehende Typen für eingebaute Funktion »strcpy«; erwartet wurde »char *(char *, const char *)« [-Wbuiltin-declaration-mismatch]
+  127 | uint8_t *strcpy (uint8_t *dest, uint8_t *src)
+      |          ^~~~~~
+lib.c:127:10: Anmerkung: »strcpy« wird in Header »<string.h>« deklariert
+lib.c:142:10: Warnung: in Konflikt stehende Typen für eingebaute Funktion »strncpy«; erwartet wurde »char *(char *, const char *, unsigned int)« [-Wbuiltin-declaration-mismatch]
+  142 | uint8_t *strncpy (uint8_t *dest, uint8_t *src, uint32_t len)
+      |          ^~~~~~~
+lib.c:142:10: Anmerkung: »strncpy« wird in Header »<string.h>« deklariert
+lib.c:157:10: Warnung: in Konflikt stehende Typen für eingebaute Funktion »memcpy«; erwartet wurde »void *(void *, const void *, unsigned int)« [-Wbuiltin-declaration-mismatch]
+  157 | uint8_t *memcpy (uint8_t *dest, const uint8_t *src, uint32_t count)
+      |          ^~~~~~
+lib.c:157:10: Anmerkung: »memcpy« wird in Header »<string.h>« deklariert
+lib.c: In Funktion »memcpy«:
+lib.c:161:24: Warnung: Initialisierung streicht Qualifizierer »const« von Zeiger-Zieltyp [-Wdiscarded-qualifiers]
+  161 |     uint8_t *src_ptr = src;
+      |                        ^~~
+lib.c: Auf höchster Ebene:
+lib.c:173:10: Warnung: in Konflikt stehende Typen für eingebaute Funktion »memset«; erwartet wurde »void *(void *, int,  unsigned int)« [-Wbuiltin-declaration-mismatch]
+  173 | uint8_t *memset (uint8_t *dest, uint8_t val, uint32_t count)
+      |          ^~~~~~
+lib.c:173:10: Anmerkung: »memset« wird in Header »<string.h>« deklariert
+lib.c: In Funktion »getch«:
+lib.c:203:9: Warnung: Implizite Deklaration der Funktion »kdelay« [-Wimplicit-function-declaration]
+  203 |         kdelay (10);
+      |         ^~~~~~
+gdt.c: In Funktion »write_tss«:
+gdt.c:99:4: Warnung: Implizite Deklaration der Funktion »memset« [-Wimplicit-function-declaration]
+   99 |    memset(&tss_entry, 0, sizeof(tss_entry));
+      |    ^~~~~~
+gdt.c:99:4: Warnung: Unverträgliche implizite Deklaration der eingebauten Funktion »memset«
+gdt.c:2:1: Anmerkung: binden Sie »<string.h>« ein oder stellen Sie eine Deklaration von »memset« bereit
+    1 | #include "types.h"
+  +++ |+#include <string.h>
+    2 | 
+gdt.c: In Funktion »set_gdt«:
+gdt.c:119:13: Warnung: Zuweisung an »uint32_t« {alias »unsigned int«} aus »struct gdt_entry_bits (*)[6]« wandelt einen Zeiger in eine Ganzzahl um, ohne explizite Typkonvertierung [-Wint-conversion]
+  119 |     gp.base = &gdt;
+      |             ^
+gdt.c:153:29: Warnung: Vorzeichenlose Umwandlung von »int« nach »unsigned char:4« ändert den Wert von »65535« nach »15« [-Woverflow]
+  153 |     null_code->limit_high = 0xFFFF;
+      |                             ^~~~~~
+gdt.c:176:22: Warnung: Vorzeichenlose Umwandlung von »int« nach »unsigned char:4« ändert den Wert von »65535« nach »15« [-Woverflow]
+  176 |     code->limit_high=0xFFFF;
+      |                      ^~~~~~
+gdt.c:188:5: Warnung: Implizite Deklaration der Funktion »gdt_flush« [-Wimplicit-function-declaration]
+  188 |     gdt_flush ();
+      |     ^~~~~~~~~
+gdt.c:190:5: Warnung: Implizite Deklaration der Funktion »tss_flush« [-Wimplicit-function-declaration]
+  190 |     tss_flush(); //implement this later
+      |     ^~~~~~~~~
+physmem.c: In Funktion »kmalloc«:
+physmem.c:346:17: Warnung: Zuweisung an »uint32_t *« {alias »unsigned int *«} von »uint32_t« {alias »unsigned int«} wandelt eine Zahl in einen Zeiger um, ohne explizite Typkonvertierung [-Wint-conversion]
+  346 |             ptr = start_free;
+      |                 ^
+physmem.c:348:32: Warnung: Rückgabe von »uint32_t« {alias »unsigned int«} aus einer Funktion mit Rückgabetyp »void *« wandelt eine Zahl in einen Zeiger um, ohne explizite Typkonvertierung [-Wint-conversion]
+  348 |             return (start_free + sizeof (size_t));
+      |                    ~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~
+physmem.c: In Funktion »kfree«:
+physmem.c:368:9: Warnung: Zuweisung an »uint32_t *« {alias »unsigned int *«} von »uint32_t« {alias »unsigned int«} wandelt eine Zahl in einen Zeiger um, ohne explizite Typkonvertierung [-Wint-conversion]
+  368 |     ptr = address - sizeof (size_t);
+      |         ^
+physmem.c: In Funktion »pmem_show_page«:
+physmem.c:396:5: Warnung: Implizite Deklaration der Funktion »kprint_int« [-Wimplicit-function-declaration]
+  396 |     kprint_int (page * PAGE_BITS * MEM_BLOCK_SIZE, 16);
+      |     ^~~~~~~~~~
+physmem.c:397:5: Warnung: Implizite Deklaration der Funktion »fb_get_cursor« [-Wimplicit-function-declaration]
+  397 |     fb_get_cursor (&cursor_x, &cursor_y);
+      |     ^~~~~~~~~~~~~
+physmem.c:402:9: Warnung: Implizite Deklaration der Funktion »fb_set_cursor« [-Wimplicit-function-declaration]
+  402 |         fb_set_cursor (cursor_x, cursor_y);
+      |         ^~~~~~~~~~~~~
+physmem.c:409:13: Warnung: Implizite Deklaration der Funktion »kprint« [-Wimplicit-function-declaration]
+  409 |             kprint ("0 ");
+      |             ^~~~~~
+physmem.c:416:5: Warnung: Implizite Deklaration der Funktion »kprint_newline« [-Wimplicit-function-declaration]
+  416 |     kprint_newline ();
+      |     ^~~~~~~~~~~~~~
+thread.c: In Funktion »thread_init«:
+thread.c:62:2: Warnung: Implizite Deklaration der Funktion »kprint« [-Wimplicit-function-declaration]
+   62 |  kprint ("Initializing threading..."); kprint_newline ();
+      |  ^~~~~~
+thread.c:62:40: Warnung: Implizite Deklaration der Funktion »kprint_newline« [-Wimplicit-function-declaration]
+   62 |  kprint ("Initializing threading..."); kprint_newline ();
+      |                                        ^~~~~~~~~~~~~~
+thread.c:64:2: Warnung: Implizite Deklaration der Funktion »memset« [-Wimplicit-function-declaration]
+   64 |  memset(listHead, 0, sizeof(ThreadContext));
+      |  ^~~~~~
+thread.c:64:2: Warnung: Unverträgliche implizite Deklaration der eingebauten Funktion »memset«
+thread.c:12:1: Anmerkung: binden Sie »<string.h>« ein oder stellen Sie eine Deklaration von »memset« bereit
+   11 | #include "elf.h"
+  +++ |+#include <string.h>
+   12 | 
+thread.c: In Funktion »thread_create«:
+thread.c:75:2: Warnung: Unverträgliche implizite Deklaration der eingebauten Funktion »memset«
+   75 |  memset(context, 0, sizeof(ThreadContext));
+      |  ^~~~~~
+thread.c:75:2: Anmerkung: binden Sie »<string.h>« ein oder stellen Sie eine Deklaration von »memset« bereit
+thread.c:95:5: Warnung: Implizite Deklaration der Funktion »strncpy« [-Wimplicit-function-declaration]
+   95 |     strncpy (context->name, name, THREAD_NAME_LEN);
+      |     ^~~~~~~
+thread.c:95:5: Warnung: Unverträgliche implizite Deklaration der eingebauten Funktion »strncpy«
+thread.c:95:5: Anmerkung: binden Sie »<string.h>« ein oder stellen Sie eine Deklaration von »strncpy« bereit
+thread.c: In Funktion »thread_exit«:
+thread.c:141:5: Warnung: Implizite Deklaration der Funktion »kfree« [-Wimplicit-function-declaration]
+  141 |     kfree (currentContext->esp);
+      |     ^~~~~
+thread.c: In Funktion »thread_show_info«:
+thread.c:221:74: Warnung: Implizite Deklaration der Funktion »kprint_int« [-Wimplicit-function-declaration]
+  221 |         kprint ("thread: '"); kprint (search->name); kprint ("' pid: "); kprint_int (search->pid, 10); kprint (", priority: "); kprint_int (search->priority, 10);
+      |                                                                          ^~~~~~~~~~
+thread.c: In Funktion »thread_schedule«:
+thread.c:274:47: Warnung: Implizite Deklaration der Funktion »clock« [-Wimplicit-function-declaration]
+  274 |                 currentContext->next_switch = clock () + (fair_schedule * currentContext->priority);
+      |                                               ^~~~~
+thread.c: In Funktion »switch_to_user_mode«:
+thread.c:355:5: Warnung: Implizite Deklaration der Funktion »set_kernel_stack« [-Wimplicit-function-declaration]
+  355 |     set_kernel_stack(GDT_KERNEL_DATA);
+      |     ^~~~~~~~~~~~~~~~
+thread.c: In Funktion »init_elf«:
+thread.c:403:9: Warnung: Unverträgliche implizite Deklaration der eingebauten Funktion »memset«
+  403 |         memset(dest, 0, ph->mem_size);
+      |         ^~~~~~
+thread.c:403:9: Anmerkung: binden Sie »<string.h>« ein oder stellen Sie eine Deklaration von »memset« bereit
+thread.c:404:9: Warnung: Implizite Deklaration der Funktion »memcpy« [-Wimplicit-function-declaration]
+  404 |         memcpy(dest, src, ph->file_size);
+      |         ^~~~~~
+thread.c:404:9: Warnung: Unverträgliche implizite Deklaration der eingebauten Funktion »memcpy«
+thread.c:404:9: Anmerkung: binden Sie »<string.h>« ein oder stellen Sie eine Deklaration von »memcpy« bereit
+thread.c:409:29: Warnung: Implizite Deklaration der Funktion »kmalloc« [-Wimplicit-function-declaration]
+  409 |     task_base = (uint8_t *) kmalloc (8192 * 2);
+      |                             ^~~~~~~
+thread.c:417:19: Warnung: Übergabe des Arguments 1 von »thread_create« wandelt eine Zahl in einen Zeiger um, ohne explizite Typkonvertierung [-Wint-conversion]
+  417 |     thread_create(task_context, task_stack, 4096 * 2, (uint32_t) header->entry, 0, "task");
+      |                   ^~~~~~~~~~~~
+      |                   |
+      |                   uint8_t * {alias unsigned char *}
+thread.c:70:29: Anmerkung: »uint32_t« {alias »unsigned int«} erwartet, aber Argument hat Typ »uint8_t *« {alias »unsigned char *«}
+   70 | void thread_create(uint32_t contextAddress, uint32_t stackStart, uint32_t stackSize, uint32_t entryPoint, uint32_t arg, uint8_t *name)
+      |                    ~~~~~~~~~^~~~~~~~~~~~~~
+thread.c:417:33: Warnung: Übergabe des Arguments 2 von »thread_create« wandelt eine Zahl in einen Zeiger um, ohne explizite Typkonvertierung [-Wint-conversion]
+  417 |     thread_create(task_context, task_stack, 4096 * 2, (uint32_t) header->entry, 0, "task");
+      |                                 ^~~~~~~~~~
+      |                                 |
+      |                                 uint8_t * {alias unsigned char *}
+thread.c:70:54: Anmerkung: »uint32_t« {alias »unsigned int«} erwartet, aber Argument hat Typ »uint8_t *« {alias »unsigned char *«}
+   70 | void thread_create(uint32_t contextAddress, uint32_t stackStart, uint32_t stackSize, uint32_t entryPoint, uint32_t arg, uint8_t *name)
+      |                                             ~~~~~~~~~^~~~~~~~~~
+thread.c: In Funktion »init_multitasking«:
+thread.c:425:3: Warnung: Implizite Deklaration der Funktion »run_kshell« [-Wimplicit-function-declaration]
+  425 |   run_kshell ();
+      |   ^~~~~~~~~~
+thread.c:428:34: Warnung: Initialisierung von »struct module *« von »long unsigned int« wandelt eine Zahl in einen Zeiger um, ohne explizite Typkonvertierung [-Wint-conversion]
+  428 |         struct module* modules = mb_info->mods_addr;
+      |                                  ^~~~~~~
+thread.c: In Funktion »get_thread_input_stream«:
+thread.c:444:7: Warnung: Zuweisung an »uint8_t *« {alias »unsigned char *«} von »uint8_t« {alias »unsigned char«} wandelt eine Zahl in einen Zeiger um, ohne explizite Typkonvertierung [-Wint-conversion]
+  444 |    ch = keyboard_ch;
+      |       ^
+interrupts.c: In Funktion »interrupts_init«:
+interrupts.c:13:5: Warnung: Implizite Deklaration der Funktion »memset« [-Wimplicit-function-declaration]
+   13 |     memset(isrs, 0, sizeof(isrFunction) * I86_IDT_MAX_ENTRY_COUNT);
+      |     ^~~~~~
+interrupts.c:13:5: Warnung: Unverträgliche implizite Deklaration der eingebauten Funktion »memset«
+interrupts.c:8:1: Anmerkung: binden Sie »<string.h>« ein oder stellen Sie eine Deklaration von »memset« bereit
+    7 | #include "pic.h"
+  +++ |+#include <string.h>
+    8 | 
+interrupts.c: In Funktion »interrupts_faultHandler«:
+interrupts.c:22:9: Warnung: Implizite Deklaration der Funktion »kprint« [-Wimplicit-function-declaration]
+   22 |         kprint ("Unhandled fault: ");
+      |         ^~~~~~
+interrupts.c:23:9: Warnung: Implizite Deklaration der Funktion »kprint_int« [-Wimplicit-function-declaration]
+   23 |         kprint_int (regs.int_no, 10);
+      |         ^~~~~~~~~~
+interrupts.c:24:9: Warnung: Implizite Deklaration der Funktion »kprint_newline« [-Wimplicit-function-declaration]
+   24 |         kprint_newline ();
+      |         ^~~~~~~~~~~~~~
+idt.c: In Funktion »idt_install«:
+idt.c:35:2: Warnung: Implizite Deklaration der Funktion »memset« [-Wimplicit-function-declaration]
+   35 |  memset(&idt, 0, sizeof(struct idt_entry) * I86_IDT_MAX_ENTRY_COUNT);
+      |  ^~~~~~
+idt.c:35:2: Warnung: Unverträgliche implizite Deklaration der eingebauten Funktion »memset«
+idt.c:9:1: Anmerkung: binden Sie »<string.h>« ein oder stellen Sie eine Deklaration von »memset« bereit
+    8 | #include "types.h"
+  +++ |+#include <string.h>
+    9 | 
+message.c:8:10: Warnung: in Konflikt stehende Typen für eingebaute Funktion »memcpy«; erwartet wurde »void *(void *, const void *, unsigned int)« [-Wbuiltin-declaration-mismatch]
+    8 | uint8_t *memcpy (uint8_t *dest, const uint8_t *src, uint32_t count);
+      |          ^~~~~~
+message.c:4:1: Anmerkung: »memcpy« wird in Header »<string.h>« deklariert
+    3 | #include "interrupts.h"
+  +++ |+#include <string.h>
+    4 | 
+message.c: In Funktion »message_send«:
+message.c:26:39: Warnung: Implizite Deklaration der Funktion »kmalloc« [-Wimplicit-function-declaration]
+   26 |         msg_head = (struct message *) kmalloc (sizeof (struct message));
+      |                                       ^~~~~~~
+message.c:35:24: Warnung: Zuweisung an »uint8_t *« {alias »unsigned char *«} von »int« wandelt eine Zahl in einen Zeiger um, ohne explizite Typkonvertierung [-Wint-conversion]
+   35 |         msg_head->data = kmalloc (len);
+      |                        ^
+message.c:67:20: Warnung: Zuweisung an »uint8_t *« {alias »unsigned char *«} von »int« wandelt eine Zahl in einen Zeiger um, ohne explizite Typkonvertierung [-Wint-conversion]
+   67 |         next->data = kmalloc (len);
+      |                    ^
+message.c: In Funktion »message_read«:
+message.c:103:27: Warnung: Zuweisung an »uint32_t *« {alias »unsigned int *«} von »uint32_t« {alias »unsigned int«} wandelt eine Zahl in einen Zeiger um, ohne explizite Typkonvertierung [-Wint-conversion]
+  103 |         thread_sender_pid = current_msg->thread_sender_num;
+      |                           ^
+message.c:115:35: Warnung: Zuweisung an »uint32_t *« {alias »unsigned int *«} von »uint32_t« {alias »unsigned int«} wandelt eine Zahl in einen Zeiger um, ohne explizite Typkonvertierung [-Wint-conversion]
+  115 |                 thread_sender_pid = current_msg->thread_sender_num;
+      |                                   ^
+kernel build end, making .iso

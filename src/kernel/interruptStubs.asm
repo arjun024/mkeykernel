@@ -64,7 +64,6 @@ ISR_NOERRCODE 28
 ISR_NOERRCODE 29
 ISR_NOERRCODE 30
 ISR_NOERRCODE 31
-ISR_NOERRCODE 128
 
 IRQ 0, 32
 IRQ 1, 33
@@ -91,7 +90,7 @@ isr_common_stub:
 
 	mov ax, ds		; save old data segment decriptor
 	push eax
-	
+
 	push es
 	push fs
 	push gs
@@ -103,7 +102,7 @@ isr_common_stub:
 	mov gs, ax
 
 	call interrupts_faultHandler
-	
+
 	pop gs
     pop fs
     pop es
@@ -126,7 +125,7 @@ irq_common_stub:
 
 	mov ax, ds		; save old data segment decriptor
 	push eax
-	
+
 	push es
 	push fs
 	push gs
@@ -138,7 +137,7 @@ irq_common_stub:
 	mov gs, ax
 
 	call interrupts_interruptHandler
-	
+
 	pop gs
     pop fs
     pop es

@@ -1,6 +1,6 @@
 /* lib.c - some helper functions */
 
-#include "types.h"
+#include "../kernel/types.h"
 
 extern uint8_t keyboard_ch;
 
@@ -84,15 +84,6 @@ int32_t atoi(uint8_t *str)
     return sign*res;
 }
 	
-	
-void kprint_int (int32_t n, int32_t base)
-{
-    char str[256];
-    
-    itoa (n, str, base);
-    kprint (str);
-}
-
 int16_t strcmp (const uint8_t * str1, const uint8_t * str2)
 {
     while (*str1 == *str2)
@@ -194,19 +185,6 @@ uint16_t *memsetw ( uint16_t *dest, uint16_t val, uint32_t count)
     return (dest);
 }
 
-uint8_t getch (void)
-{
-    uint8_t ch;
-    
-    while (keyboard_ch == NULL)
-    {
-        kdelay (10);
-    }
-    
-    ch = keyboard_ch;
-    keyboard_ch = NULL;     // reset buffer, kind of hack I know ;)
-    return (ch);
-}
 
 
     

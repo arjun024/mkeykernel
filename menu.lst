@@ -3,3 +3,4 @@ default=0
 
     title os
     kernel /boot/kernel
+    module /test.bin

@@ -1,32 +1,31 @@
 // #include <stdio.h>
 
 #include "types.h"
-#include "protos.h"
 
 uint32_t physmem_pages[PAGES];
 
 void set_bit (uint32_t *ptr, uint16_t bit)
 {
     uint32_t ret = *ptr;
-
+    
     ret |= 1 << bit;
-
+    
     *ptr = ret;
 }
 
 void clear_bit (uint32_t *ptr, uint16_t bit)
 {
     uint32_t ret = *ptr;
-
+    
     ret &= ~(1 << bit);
-
+    
     *ptr = ret;
 }
 
 uint16_t get_bit (uint32_t n, uint16_t bit)
 {
     uint16_t bitset;
-
+    
     bitset = (n >> bit) & 1;
     return (bitset);
 }
@@ -34,7 +33,7 @@ uint16_t get_bit (uint32_t n, uint16_t bit)
 void pmem_init_bitmap ()
 {
     uint32_t page;
-
+    
     for (page = 0; page < PAGES; page++)
     {
         physmem_pages[page] = 0xFFFFFFFF;   /* mark as reserved */
@@ -57,19 +56,19 @@ uint32_t pmem_get_page_from_address (uint32_t address)
 
     return (page);
 }
-
+    
 int16_t pmem_set_bitmap (uint32_t start, uint32_t end, uint32_t pages, uint8_t state)
 {
     /* set bits in bitmap  */
     uint32_t start_p, end_p;
     int16_t start_b, end_b;
-
+    
     uint32_t p; int16_t b;
-
+    
     uint32_t page_start = pmem_get_page_from_address (start);
     uint32_t page_end;
-
-
+    
+    
     if (pages != 0)
     {
         page_end = page_start + pages - 1;
@@ -78,18 +77,18 @@ int16_t pmem_set_bitmap (uint32_t start, uint32_t end, uint32_t pages, uint8_t s
     {
         page_end = pmem_get_page_from_address (end);
     }
-
+    
     // kprint ("start address: "); kprint_int (start, 10); kprint_newline ();
     // kprint ("start page: "); kprint_int (page_start, 10); kprint_newline ();
-
+    
     // kprint ("end address: "); kprint_int (end, 10); kprint_newline ();
     // kprint ("end page: "); kprint_int (page_end, 10); kprint_newline ();
-
+    
     if (page_end > MEM_BLOCKS)
     {
         return (MEM_ERR_RANGE);
     }
-
+    
     if (page_start >= PAGE_BITS)
     {
         start_p = page_start / PAGE_BITS;
@@ -100,7 +99,7 @@ int16_t pmem_set_bitmap (uint32_t start, uint32_t end, uint32_t pages, uint8_t s
         start_p = 0;
         start_b = page_start;
     }
-
+    
     if (page_end >= PAGE_BITS)
     {
         end_p = page_end / PAGE_BITS;
@@ -111,7 +110,7 @@ int16_t pmem_set_bitmap (uint32_t start, uint32_t end, uint32_t pages, uint8_t s
         end_p = 0;
         end_b = page_end;
     }
-
+    
     if (end_p > start_p)
     {
         for (p = start_p; p <= end_p; p++)
@@ -203,27 +202,27 @@ int16_t pmem_set_bitmap (uint32_t start, uint32_t end, uint32_t pages, uint8_t s
                     clear_bit (&physmem_pages[start_p], b);
                 }
             }
-
+            
         }
     }
     return (MEM_ERR_OK);
 }
-
+                
 int16_t pmem_get_free (size_t size, uint32_t *start, uint32_t *end, uint32_t *pages)
 {
     /* return pointers to free memory range */
     int8_t found_start = 0;
-
+    
     uint32_t p, i;
     uint16_t b;
     uint32_t start_free, end_free;
     size_t mempages, mempages_free = 0;
-
-
+    
+    
     if (size > MEM_BLOCK_SIZE)
     {
         mempages = size / MEM_BLOCK_SIZE;
-
+        
         if (size % MEM_BLOCK_SIZE != 0)
         {
             mempages++;
@@ -234,9 +233,9 @@ int16_t pmem_get_free (size_t size, uint32_t *start, uint32_t *end, uint32_t *pa
         mempages = 1;
     }
     *pages = mempages;
-
+    
     // kprint ("pmem_get_free: mempages = "); kprint_int (mempages, 10); kprint_newline ();
-
+    
     for (p = 0; p < PAGES; p++)
     {
         for (b = 0; b < PAGE_BITS; b++)
@@ -248,7 +247,7 @@ int16_t pmem_get_free (size_t size, uint32_t *start, uint32_t *end, uint32_t *pa
                     found_start = 1;
                     start_free = PAGE_BITS * MEM_BLOCK_SIZE * p + b * MEM_BLOCK_SIZE;
                     mempages_free = 1;
-
+                    
                     if (mempages == 1)
                     {
                         *start = start_free;
@@ -262,7 +261,7 @@ int16_t pmem_get_free (size_t size, uint32_t *start, uint32_t *end, uint32_t *pa
                     if (mempages_free >= mempages)
                     {
                         end_free = (PAGE_BITS * MEM_BLOCK_SIZE * p + b * MEM_BLOCK_SIZE) - 1;
-
+                    
                         *start = start_free;
                         *end = end_free;
                         return (MEM_ERR_OK);
@@ -274,7 +273,7 @@ int16_t pmem_get_free (size_t size, uint32_t *start, uint32_t *end, uint32_t *pa
                 if (mempages_free >= mempages)
                 {
                     end_free = (PAGE_BITS * MEM_BLOCK_SIZE * p + b * MEM_BLOCK_SIZE) - 1;
-
+                    
                     *start = start_free;
                     *end = end_free;
                     return (MEM_ERR_OK);
@@ -288,12 +287,12 @@ int16_t pmem_get_free (size_t size, uint32_t *start, uint32_t *end, uint32_t *pa
         if (mempages_free >= mempages)
         {
             end_free = (PAGE_BITS * MEM_BLOCK_SIZE * p + b * MEM_BLOCK_SIZE) - 1;
-
+                    
             *start = start_free;
             *end = end_free;
             return (MEM_ERR_OK);
         }
-
+                
     }
     return (MEM_ERR_NOMEM);
 }
@@ -301,11 +300,11 @@ int16_t pmem_get_free (size_t size, uint32_t *start, uint32_t *end, uint32_t *pa
 uint32_t pmem_count_free_pages (void)
 {
     /* for informantion only: count the free pages */
-
+    
     uint32_t pages = 0;
     uint32_t p, i;
     uint16_t b;
-
+    
     for (p = 0; p < PAGES; p++)
     {
         for (b = 0; b < PAGE_BITS; b++)
@@ -322,9 +321,9 @@ uint32_t pmem_count_free_pages (void)
 uint32_t pmem_get_free_ram_info (void)
 {
     uint32_t free_mem_kbytes;
-
+    
     free_mem_kbytes = pmem_count_free_pages () * (MEM_BLOCK_SIZE / 1024);
-
+    
     return (free_mem_kbytes);
 }
 
@@ -335,18 +334,18 @@ void *kmalloc (size_t size)
     size_t new_size;
     uint32_t pages;
     new_size = size + sizeof (size_t);
-
+    
     // kprint ("kmalloc: allocate "); kprint_int ((uint32_t) new_size, 10); kprint_newline ();
-
+    
     if (pmem_get_free (new_size, &start_free, &end_free, &pages) == MEM_ERR_OK)
     {
         // kprint ("free mem found"); kprint_newline ();
-
+        
         if (pmem_set_bitmap (start_free, end_free, pages, ALLOCATE) == MEM_ERR_OK)
         {
-            ptr = &start_free;
+            ptr = start_free;
             *ptr = pages;    /* store size of memoryin pages */
-            return ((void *) start_free + sizeof (size_t));
+            return (start_free + sizeof (size_t));
         }
         else
         {
@@ -365,14 +364,14 @@ uint32_t kfree (uint32_t address)
     uint32_t *ptr;
     uint32_t end_mem;
     size_t pages;
-
-    ptr = (uint32_t *) address - sizeof (size_t);
+    
+    ptr = address - sizeof (size_t);
     pages = *ptr;
-
+    
     // kprint ("kfree: deallocate "); kprint_int ((uint32_t) pages, 10); kprint_newline ();
-
+    
     end_mem = (address - sizeof (size_t)) + pages * MEM_BLOCK_SIZE;
-
+    
     if (pmem_set_bitmap (address - sizeof (size_t), end_mem, pages, FREE) == MEM_ERR_OK)
     {
         return (NULL);
@@ -387,22 +386,22 @@ void pmem_show_page (uint32_t page)
 {
     uint16_t b;
     uint32_t cursor_x, cursor_y;
-
+    
     if (page >= PAGES)
     {
         // ERROR out of range, return
         return;
     }
-
+    
     kprint_int (page * PAGE_BITS * MEM_BLOCK_SIZE, 16);
     fb_get_cursor (&cursor_x, &cursor_y);
-
+    
     if (cursor_x < 15)
     {
         cursor_x = 15;
         fb_set_cursor (cursor_x, cursor_y);
     }
-
+    
     for (b = 0; b < PAGE_BITS; b++)
     {
         if (get_bit (physmem_pages[page], b) == FREE)
@@ -417,8 +416,8 @@ void pmem_show_page (uint32_t page)
     kprint_newline ();
 }
 
-
-
+    
+    
 /*
 void main ()
 {

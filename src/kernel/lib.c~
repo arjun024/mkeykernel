@@ -146,7 +146,7 @@ uint8_t *strncpy (uint8_t *dest, uint8_t *src, uint32_t len)
     {
         dest[i] = src[i];
         i++;
-        if (i == len) break;
+        if (i = len) break;
     }
     
     dest[i] = '\0';

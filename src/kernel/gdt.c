@@ -1,5 +1,4 @@
 #include "types.h"
-#include "protos.h"
 
 void stack_space (void);
 
@@ -97,7 +96,7 @@ void write_tss(struct gdt_entry_bits *g)
    g->base_high=(base&0xFF000000)>>24; //isolate top byte.
 
    // Ensure the TSS is initially zero'd.
-   memset((uint8_t *) &tss_entry, 0, sizeof(tss_entry));
+   memset(&tss_entry, 0, sizeof(tss_entry));
 
    // tss_entry.ss0  = stack_space;  // Set the kernel stack segment.
    // tss_entry.esp0 = stack_space; // Set the kernel stack pointer.
@@ -108,11 +107,16 @@ void write_tss(struct gdt_entry_bits *g)
    //note that CS is loaded from the IDT entry and should be the regular kernel code segment
 }
 
+void set_kernel_stack(uint32_t stack) //this will update the ESP0 stack used when an interrupt occurs
+{
+   tss_entry.esp0 = stack;
+}
+
 
 void set_gdt (void)
 {
     gp.limit = (sizeof(struct gdt_entry_bits) * 6) - 1;
-    gp.base = (uint32_t) &gdt;
+    gp.base = &gdt;
 
     //....insert your null_seg 0 segments here or whatever
     struct gdt_entry_bits *null_seg;
@@ -184,9 +188,4 @@ void set_gdt (void)
     gdt_flush ();
     //after those are installed we'll tell the CPU where our TSS is:
     tss_flush(); //implement this later
-}
-
-void set_kernel_stack(uint32_t stack) //this will update the ESP0 stack used when an interrupt occurs
-{
-   tss_entry.esp0 = stack;
 }

@@ -1,5 +1,5 @@
 /* by Andreas Galauner
- * 
+ *
  * https://github.com/G33KatWork
  */
 
@@ -59,6 +59,7 @@ void isr6(void);
 void isr7(void);
 void isr8(void);
 void isr9(void);
+
 void isr10(void);
 void isr11(void);
 void isr12(void);
@@ -102,6 +103,6 @@ void irq13(void);
 void irq14(void);
 void irq15(void);
 
-void isr128(void);       // syscall interruot 80
+// void isr128(void);       // syscall interruot 80
 
 #endif

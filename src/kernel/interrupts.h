@@ -1,7 +1,7 @@
 #ifndef _INTERRUPTS_H
 #define _INTERRUPTS_H
 /* by Andreas Galauner
- * 
+ *
  * https://github.com/G33KatWork
  */
 
@@ -25,7 +25,7 @@
 #define		IRQ_FPU				42
 #define		IRQ_HDC				43
 
-#define     IRQ_SYSCALL         38
+#define     IRQ_SYSCALL         37
 
 // Set the following number to the maximum nested exceptions
 // the kernel tries to resolve before it will panic

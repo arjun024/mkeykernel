@@ -1,0 +1,11 @@
+// message definitions
+
+struct message
+{
+    uint8_t *data;      // buffer for message
+    uint32_t data_len;  // message length
+    uint8_t data_ready; // 1 = data not written yet, 0 = data ready, message is in buffer
+    uint32_t thread_num;
+    struct message *next;
+};
+
