@@ -430,10 +430,17 @@ void kshell (uint32_t argument)
                     input[input_ind] = '\0';
                     pid = atoi (input);
 
-                    if (thread_kill (pid) == 0)
-                    {
-                        kprint ("thread killed!"); kprint_newline ();
-                    }
+					if (pid > 1)
+					{
+                    	if (thread_kill (pid) == 0)
+                    	{
+                        	kprint ("thread killed!"); kprint_newline ();
+                    	}
+					}
+					else
+					{
+						kprint ("can't kill system pid: "); kprint_int (pid, 10); kprint_newline ();
+					}
                 }
 
                 if (strcmp (command, (const uint8_t *) "help") == 0)
