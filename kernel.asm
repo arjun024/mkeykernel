@@ -10,33 +10,33 @@ section .text
         dd - (0x1BADB002 + 0x00)   ;checksum. m+f+c should be zero
 
 global start
-global keyboard_handler
-global read_port
-global write_port
-global load_idt
+global _keyboard_handler
+global _read_port
+global _write_port
+global _load_idt
 
 extern kmain 		;this is defined in the c file
 extern keyboard_handler_main
 
-read_port:
+_read_port:
 	mov edx, [esp + 4]
 			;al is the lower 8 bits of eax
 	in al, dx	;dx is the lower 16 bits of edx
 	ret
 
-write_port:
+_write_port:
 	mov   edx, [esp + 4]    
 	mov   al, [esp + 4 + 4]  
 	out   dx, al  
 	ret
 
-load_idt:
+_load_idt:
 	mov edx, [esp + 4]
 	lidt [edx]
 	sti 				;turn on interrupts
 	ret
 
-keyboard_handler:                 
+_keyboard_handler:                 
 	call    keyboard_handler_main
 	iretd
 
