@@ -19,10 +19,10 @@
 #define ENTER_KEY_CODE 0x1C
 
 extern unsigned char keyboard_map[128];
-extern void keyboard_handler(void);
-extern char read_port(unsigned short port);
-extern void write_port(unsigned short port, unsigned char data);
-extern void load_idt(unsigned long *idt_ptr);
+void keyboard_handler(void);
+char read_port(unsigned short port);
+void write_port(unsigned short port, unsigned char data);
+void load_idt(unsigned long *idt_ptr);
 
 /* current cursor location */
 unsigned int current_loc = 0;
